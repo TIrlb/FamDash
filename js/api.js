@@ -88,7 +88,7 @@
         { id: 'k1', name: 'Ben', count: 23, goal: 50, color: '#2f7fe0' },
         { id: 'k2', name: 'Nate', count: 37, goal: 50, color: '#ef6c2f' }
       ],
-      calendars: ['family'],
+      calendars: ['family', 'team', 'school'],
       settings: { views: ['calendar', 'jars', 'photo'], viewSeconds: 15, holdSeconds: 30, daysAhead: 30, maxEvents: 14 },
       ntfyTopic: 'demo'
     };
@@ -144,9 +144,12 @@
         if (action === 'state') r = { ok: true, state: clone() };
         else if (action === 'events') r = { ok: true, events: events };
         else if (action === 'calendars') r = { ok: true, calendars: [
-          { id: 'family', name: 'Family', color: F, selected: true },
-          { id: 'team', name: 'Team', color: T, selected: true },
-          { id: 'school', name: 'School', color: S, selected: true }] };
+          { id: 'family', name: 'Family', color: F },
+          { id: 'team', name: 'Team', color: T },
+          { id: 'school', name: 'School', color: S }].map(function (c) {
+            c.selected = state.calendars.indexOf(c.id) >= 0;
+            return c;
+          }) };
         else if (action === 'photos') r = { ok: true, photos: photos.map(function (x) { return { id: x.id }; }) };
         else if (action === 'photo') {
           var i = 0; photos.forEach(function (x, j) { if (x.id === p.id) i = j; });
@@ -161,6 +164,7 @@
           if (b.name) k.name = b.name; if (b.goal != null) k.goal = +b.goal; if (b.count != null) k.count = +b.count;
         });
         if (action === 'setSettings') Object.assign(state.settings, b.settings);
+        if (action === 'setCalendars') state.calendars = b.ids;
         save();
         return new Promise(function (res) { setTimeout(function () { res({ ok: true, state: clone() }); }, 200); });
       }

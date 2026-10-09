@@ -255,7 +255,20 @@
   /* ---------- settings ---------- */
   var VIEW_NAMES = { calendar: 'Calendar', jars: 'Marble jars', photo: 'Photo' };
 
+  // Unsaved edits in a settings section are never overwritten by a background refresh.
+  var dirty = { kids: false, display: false };
+  $('kidSet').addEventListener('input', function () { dirty.kids = true; status('unsaved changes'); });
+  ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents', 'viewChecks'].forEach(function (id) {
+    $(id).addEventListener('input', function () { dirty.display = true; status('unsaved changes'); });
+    $(id).addEventListener('change', function () { dirty.display = true; });
+  });
+
   function renderKidSettings() {
+    if (!dirty.kids) renderKidFields();
+    if (!dirty.display) renderDisplayFields();
+  }
+
+  function renderKidFields() {
     $('kidSet').innerHTML = state.kids.map(function (k) {
       return '<div class="row" style="margin-bottom:10px">' +
         '<label>Name<input type="text" id="kn-' + k.id + '" value="' + esc(k.name) + '" maxlength="24"></label>' +
@@ -263,11 +276,11 @@
         '<label>Count<input type="number" id="kc-' + k.id + '" value="' + k.count + '" min="0" max="999" inputmode="numeric"></label></div>';
     }).join('') + '<button class="btn small ghost" id="saveKids" style="width:100%">Save kids</button>';
     $('saveKids').onclick = saveKids;
+  }
 
+  function renderDisplayFields() {
     var st = state.settings;
-    ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents'].forEach(function (k) {
-      if (document.activeElement !== $(k)) $(k).value = st[k];
-    });
+    ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents'].forEach(function (k) { $(k).value = st[k]; });
     $('viewChecks').innerHTML = Object.keys(VIEW_NAMES).map(function (v) {
       return '<label class="check"><input type="checkbox" value="' + v + '"' + (st.views.indexOf(v) >= 0 ? ' checked' : '') + '>' + VIEW_NAMES[v] + ' in rotation</label>';
     }).join('');
@@ -280,6 +293,7 @@
         return F.post('setKid', { kidId: k.id, name: $('kn-' + k.id).value, goal: $('kg-' + k.id).value, count: $('kc-' + k.id).value });
       });
     }, Promise.resolve()).then(function (r) {
+      dirty.kids = false;
       apply(r.state); status('saved');
       F.poke(state.ntfyTopic, { type: 'refresh' });
     }).catch(function (e) { status('⚠ ' + e.message, true); });
@@ -294,6 +308,7 @@
       viewSeconds: $('viewSeconds').value, holdSeconds: $('holdSeconds').value,
       daysAhead: $('daysAhead').value, maxEvents: $('maxEvents').value
     } }).then(function (r) {
+      dirty.display = false;
       apply(r.state); status('saved');
       F.poke(state.ntfyTopic, { type: 'refresh' });
     }).catch(function (e) { status('⚠ ' + e.message, true); });
@@ -334,7 +349,10 @@
 
   /* ---------- boot ---------- */
   function load() {
-    return F.get('state').then(function (r) { apply(r.state); status('connected'); })
+    return F.get('state').then(function (r) {
+      apply(r.state);
+      status(dirty.kids || dirty.display ? 'unsaved changes' : 'connected');
+    })
       .catch(function (e) { status('⚠ ' + e.message, true); });
   }
   load();
