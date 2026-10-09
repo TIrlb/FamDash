@@ -68,6 +68,12 @@ function getState_() {
   const s = raw ? JSON.parse(raw) : defaultState_();
   const d = defaultState_().settings;
   s.settings = Object.assign({}, d, s.settings || {});
+  // Views added in later versions join the rotation once; unticking them afterwards sticks.
+  const seen = s.settings.seenViews || ['calendar', 'jars', 'photo'];
+  d.views.forEach(function (v) {
+    if (seen.indexOf(v) < 0) { seen.push(v); if (s.settings.views.indexOf(v) < 0) s.settings.views.push(v); }
+  });
+  s.settings.seenViews = seen;
   return s;
 }
 
