@@ -41,7 +41,7 @@
   .pm.plus { background: var(--warm); color: #2b1a00; }
   .pm:active { transform: scale(.92); }
 
-  .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .seg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .btn { font: 800 16px 'Nunito', sans-serif; border: 0; border-radius: 14px; padding: 15px 10px; background: var(--card); color: var(--ink); touch-action: manipulation; }
   .btn:active { background: var(--card2); }
   .btn.primary { background: var(--warm); color: #2b1a00; width: 100%; }
@@ -95,6 +95,7 @@
     <button class="btn" data-show="calendar">Calendar</button>
     <button class="btn" data-show="jars">Jars</button>
     <button class="btn" data-show="photo">Photo</button>
+    <button class="btn" data-show="lunch">Lunch menu</button>
   </div>
   <p class="note" id="holdNote"></p>
 
@@ -117,6 +118,7 @@
         <label>Days ahead<input type="number" id="daysAhead" min="1" max="120" inputmode="numeric"></label>
         <label>Max events<input type="number" id="maxEvents" min="3" max="40" inputmode="numeric"></label>
       </div>
+      <label>School lunch page<input type="text" id="lunchUrl" inputmode="url" autocomplete="off"></label>
       <div id="viewChecks"></div>
       <button class="btn primary" id="saveSettings">Save settings</button>
 
@@ -253,12 +255,12 @@
   });
 
   /* ---------- settings ---------- */
-  var VIEW_NAMES = { calendar: 'Calendar', jars: 'Marble jars', photo: 'Photo' };
+  var VIEW_NAMES = { calendar: 'Calendar', jars: 'Marble jars', photo: 'Photo', lunch: 'Lunch menu' };
 
   // Unsaved edits in a settings section are never overwritten by a background refresh.
   var dirty = { kids: false, display: false };
   $('kidSet').addEventListener('input', function () { dirty.kids = true; status('unsaved changes'); });
-  ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents', 'viewChecks'].forEach(function (id) {
+  ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents', 'lunchUrl', 'viewChecks'].forEach(function (id) {
     $(id).addEventListener('input', function () { dirty.display = true; status('unsaved changes'); });
     $(id).addEventListener('change', function () { dirty.display = true; });
   });
@@ -280,7 +282,7 @@
 
   function renderDisplayFields() {
     var st = state.settings;
-    ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents'].forEach(function (k) { $(k).value = st[k]; });
+    ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents', 'lunchUrl'].forEach(function (k) { $(k).value = st[k] || ''; });
     $('viewChecks').innerHTML = Object.keys(VIEW_NAMES).map(function (v) {
       return '<label class="check"><input type="checkbox" value="' + v + '"' + (st.views.indexOf(v) >= 0 ? ' checked' : '') + '>' + VIEW_NAMES[v] + ' in rotation</label>';
     }).join('');
@@ -306,7 +308,7 @@
     F.post('setSettings', { settings: {
       views: views,
       viewSeconds: $('viewSeconds').value, holdSeconds: $('holdSeconds').value,
-      daysAhead: $('daysAhead').value, maxEvents: $('maxEvents').value
+      daysAhead: $('daysAhead').value, maxEvents: $('maxEvents').value, lunchUrl: $('lunchUrl').value
     } }).then(function (r) {
       dirty.display = false;
       apply(r.state); status('saved');

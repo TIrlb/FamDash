@@ -41,11 +41,12 @@ function defaultState_() {
     ],
     calendars: [CalendarApp.getDefaultCalendar().getId()],
     settings: {
-      views: ['calendar', 'jars', 'photo'],
+      views: ['calendar', 'jars', 'photo', 'lunch'],
       viewSeconds: 20,
       holdSeconds: 30,
       daysAhead: 30,
-      maxEvents: 14
+      maxEvents: 14,
+      lunchUrl: 'https://stpiuscatholicschool.net/lunch'
     }
   };
 }
@@ -98,6 +99,7 @@ function doGet(e) {
       case 'events': return json_({ ok: true, events: events_() });
       case 'calendars': return json_({ ok: true, calendars: calendars_() });
       case 'photos': return json_({ ok: true, photos: photos_() });
+      case 'lunch': return json_(Object.assign({ ok: true }, lunch_(p.fresh === '1')));
       case 'photo': return json_(Object.assign({ ok: true }, photo_(p.id)));
       default: return json_({ ok: false, error: 'unknown action' });
     }
@@ -216,7 +218,7 @@ function setSettings_(n) {
   const s = getState_();
   const st = s.settings;
   if (Array.isArray(n.views)) {
-    const allowed = ['calendar', 'jars', 'photo'];
+    const allowed = ['calendar', 'jars', 'photo', 'lunch'];
     const v = n.views.filter(function (x) { return allowed.indexOf(x) >= 0; });
     if (v.length) st.views = v;
   }
@@ -224,6 +226,10 @@ function setSettings_(n) {
   if (n.holdSeconds != null) st.holdSeconds = Math.max(5, Math.min(3600, Number(n.holdSeconds) || st.holdSeconds));
   if (n.daysAhead != null) st.daysAhead = Math.max(1, Math.min(120, Number(n.daysAhead) || st.daysAhead));
   if (n.maxEvents != null) st.maxEvents = Math.max(3, Math.min(40, Number(n.maxEvents) || st.maxEvents));
+  if (typeof n.lunchUrl === 'string' && /^https:\/\//.test(n.lunchUrl.trim())) {
+    st.lunchUrl = n.lunchUrl.trim();
+    CacheService.getScriptCache().remove('lunch');
+  }
   saveState_(s);
   return publicState_(s);
 }
@@ -252,4 +258,55 @@ function deletePhoto_(id) {
   if (!inFolder) throw new Error('not a FamDash photo');
   f.setTrashed(true); // goes to Drive trash, recoverable for 30 days
   return { deleted: id };
+}
+
+/* ---------- school lunch calendar ---------- */
+
+/**
+ * Finds the lunch-calendar image on the school's lunch page. The image's folder
+ * and file name change every month, so pick by content rather than by path:
+ * eCatholic "pictures" images (not staff thumbnails), preferring names with
+ * lunch/menu, newest by the ?t= upload timestamp. Cached 3h.
+ */
+function lunch_(fresh) {
+  const cache = CacheService.getScriptCache();
+  if (!fresh) {
+    const hit = cache.get('lunch');
+    if (hit) return JSON.parse(hit);
+  }
+  const page = getState_().settings.lunchUrl;
+  const res = UrlFetchApp.fetch(page, { muteHttpExceptions: true, followRedirects: true });
+  if (res.getResponseCode() !== 200) throw new Error('lunch page returned ' + res.getResponseCode());
+  const pick = pickLunchImage_(res.getContentText());
+  if (!pick) throw new Error('no lunch image found on ' + page);
+  const out = { url: pick.url, name: pick.name, page: page, checked: new Date().toISOString() };
+  cache.put('lunch', JSON.stringify(out), 3 * 3600);
+  return out;
+}
+
+function pickLunchImage_(html) {
+  const re = /https?:\/\/files\.ecatholic\.com\/\d+\/pictures\/(\d{4})\/(\d{1,2})\/([^"'\s<>?]+?\.(?:png|jpe?g|gif|webp))(?:\?t=(\d+))?/gi;
+  const seen = {};
+  const list = [];
+  let m;
+  html = html.replace(/&amp;/g, '&');
+  while ((m = re.exec(html))) {
+    const url = m[0];
+    if (seen[url]) continue;
+    seen[url] = true;
+    let name;
+    try { name = decodeURIComponent(m[3]); } catch (e) { name = m[3]; }
+    const lower = name.toLowerCase();
+    list.push({
+      url: url,
+      name: name,
+      lunchy: /lunch|menu/.test(lower),
+      logo: /logo/.test(lower),
+      when: m[4] ? Number(m[4]) : Date.UTC(Number(m[1]), Number(m[2]) - 1, 1)
+    });
+  }
+  const pool = list.filter(function (x) { return x.lunchy; });
+  const candidates = pool.length ? pool : list.filter(function (x) { return !x.logo; });
+  candidates.sort(function (a, b) { return b.when - a.when; });
+  return candidates[0] || null;
 }

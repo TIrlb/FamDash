@@ -46,6 +46,7 @@
   .clock .t { font-family: 'Fredoka', sans-serif; font-size: 7.2vh; line-height: 1; font-weight: 500; letter-spacing: .01em; }
   .clock .d { font-size: 2.5vh; color: var(--muted); font-weight: 700; margin-top: .4vh; }
   body.photo-on .clock .d { color: #fff; opacity: .85; }
+  body.lunch-on .clock .d { display: none; }
 
   /* calendar */
   #v-calendar h1 { font-size: 5.4vh; margin-bottom: 2.6vh; }
@@ -86,6 +87,13 @@
   #v-photo .blur { position: absolute; top: -40px; right: -40px; bottom: -40px; left: -40px; background-size: cover; background-position: center; filter: blur(32px) brightness(.55); }
   #v-photo img { position: absolute; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
 
+  /* lunch */
+  #v-lunch { display: flex; flex-direction: column; }
+  #v-lunch h1 { font-size: 5.4vh; margin-bottom: 2.2vh; }
+  #v-lunch h1 span { color: var(--warm); }
+  .lunch-card { flex: 1; min-height: 0; background: #fff; border-radius: 18px; padding: 1.4vh; display: flex; align-items: center; justify-content: center; box-shadow: 0 18px 40px rgba(0,0,0,.35); }
+  .lunch-card img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+
   /* footer dots */
   .dots { position: absolute; bottom: 2.4vh; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 5; }
   .dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.22); transition: background .4s, width .4s; }
@@ -117,6 +125,11 @@
 <section class="view" id="v-photo">
   <div class="blur" id="photoBlur"></div>
   <img id="photoImg" alt="">
+</section>
+
+<section class="view" id="v-lunch">
+  <h1>Lunch <span>menu</span></h1>
+  <div class="lunch-card"><img id="lunchImg" alt="School lunch calendar"></div>
 </section>
 
 <div class="dots" id="dots"></div>
@@ -153,7 +166,8 @@
 
   var state = null, events = [], photoList = [], photoListAt = 0;
   var shownCounts = {};           // marble counts last drawn on the jar view
-  var views = ['calendar', 'jars', 'photo'];
+  var views = ['calendar', 'jars', 'photo', 'lunch'];
+  var lunch = null;               // {url, name} once the image has actually loaded
   var current = null, idx = -1, timer = null, holding = false;
   var preloaded = null;           // {id, url}
 
@@ -186,6 +200,18 @@
   function loadPhotoList() {
     return F.get('photos').then(function (r) { photoList = r.photos; photoListAt = Date.now(); })
       .catch(function (e) { setStatus('⚠ photos: ' + e.message); });
+  }
+
+  function loadLunch() {
+    return F.get('lunch').then(function (r) {
+      if (lunch && lunch.url === r.url) return;
+      return new Promise(function (resolve) {
+        var im = new Image();
+        im.onload = function () { lunch = r; $('lunchImg').src = r.url; resolve(); };
+        im.onerror = function () { setStatus('⚠ lunch image failed to load'); resolve(); };
+        im.src = r.url;
+      });
+    }).catch(function (e) { setStatus('⚠ lunch: ' + e.message); });
   }
 
   /* ---------- calendar ---------- */
@@ -301,11 +327,13 @@
 
   function show(view) {
     if (view === 'photo' && !showPhoto()) return false;
+    if (view === 'lunch' && !lunch) return false;
     if (view === 'calendar') renderCalendar();
     if (view === 'jars') renderJars();
     var sections = document.querySelectorAll('.view');
     for (var i = 0; i < sections.length; i++) sections[i].classList.toggle('on', sections[i].id === 'v-' + view);
     document.body.classList.toggle('photo-on', view === 'photo');
+    document.body.classList.toggle('lunch-on', view === 'lunch');
     current = view;
     drawDots();
     return true;
@@ -360,7 +388,7 @@
   })();
 
   /* ---------- boot ---------- */
-  Promise.all([loadState(), loadEvents(), loadPhotoList()]).then(function () {
+  Promise.all([loadState(), loadEvents(), loadPhotoList(), loadLunch()]).then(function () {
     if (state) {
       state.kids.forEach(function (k) { shownCounts[k.id] = k.count; });
       F.listen(state.ntfyTopic, onMessage);
@@ -370,6 +398,7 @@
   });
   setInterval(loadState, 5 * 60000);
   setInterval(loadEvents, 10 * 60000);
+  setInterval(loadLunch, 3 * 3600000);
 })();
 </script>
 </body>

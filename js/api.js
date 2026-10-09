@@ -89,9 +89,11 @@
         { id: 'k2', name: 'Nate', count: 37, goal: 50, color: '#ef6c2f' }
       ],
       calendars: ['family', 'team', 'school'],
-      settings: { views: ['calendar', 'jars', 'photo'], viewSeconds: 15, holdSeconds: 30, daysAhead: 30, maxEvents: 14 },
+      settings: { views: ['calendar', 'jars', 'photo', 'lunch'], viewSeconds: 15, holdSeconds: 30, daysAhead: 30, maxEvents: 14, lunchUrl: 'https://stpiuscatholicschool.net/lunch' },
       ntfyTopic: 'demo'
     };
+    if (state.settings.views.indexOf('lunch') < 0 && !state.lunchSeen) { state.settings.views.push('lunch'); state.lunchSeen = true; }
+    if (!state.settings.lunchUrl) state.settings.lunchUrl = 'https://stpiuscatholicschool.net/lunch';
     function save() { try { localStorage.setItem(KEYD, JSON.stringify(state)); } catch (e) {} }
     function clone() { return JSON.parse(JSON.stringify(state)); }
 
@@ -151,6 +153,8 @@
             return c;
           }) };
         else if (action === 'photos') r = { ok: true, photos: photos.map(function (x) { return { id: x.id }; }) };
+        else if (action === 'lunch') r = { ok: true, name: 'October lunch.png',
+          url: 'https://files.ecatholic.com/2970/pictures/2026/9/October%20lunch.png?t=1790092656000' };
         else if (action === 'photo') {
           var i = 0; photos.forEach(function (x, j) { if (x.id === p.id) i = j; });
           r = { ok: true, mime: 'image/svg+xml', data: photoSvg(photos[i], i) };
