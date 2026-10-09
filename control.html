@@ -119,6 +119,8 @@
         <label>Max events<input type="number" id="maxEvents" min="3" max="40" inputmode="numeric"></label>
       </div>
       <label>School lunch page<input type="text" id="lunchUrl" inputmode="url" autocomplete="off"></label>
+      <label>Lunch image URL (fallback)<input type="text" id="lunchImageUrl" inputmode="url" autocomplete="off" placeholder="https://files.ecatholic.com/…"></label>
+      <p class="note" style="margin-top:-6px">The school site blocks automated fetches, so the backend guesses this month's file name ("October lunch.png"). If the menu doesn't update, open the lunch page, long-press the menu image → Copy image address, paste here, and save.</p>
       <div id="viewChecks"></div>
       <button class="btn primary" id="saveSettings">Save settings</button>
 
@@ -260,7 +262,7 @@
   // Unsaved edits in a settings section are never overwritten by a background refresh.
   var dirty = { kids: false, display: false };
   $('kidSet').addEventListener('input', function () { dirty.kids = true; status('unsaved changes'); });
-  ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents', 'lunchUrl', 'viewChecks'].forEach(function (id) {
+  ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents', 'lunchUrl', 'lunchImageUrl', 'viewChecks'].forEach(function (id) {
     $(id).addEventListener('input', function () { dirty.display = true; status('unsaved changes'); });
     $(id).addEventListener('change', function () { dirty.display = true; });
   });
@@ -282,7 +284,7 @@
 
   function renderDisplayFields() {
     var st = state.settings;
-    ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents', 'lunchUrl'].forEach(function (k) { $(k).value = st[k] || ''; });
+    ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents', 'lunchUrl', 'lunchImageUrl'].forEach(function (k) { $(k).value = st[k] || ''; });
     $('viewChecks').innerHTML = Object.keys(VIEW_NAMES).map(function (v) {
       return '<label class="check"><input type="checkbox" value="' + v + '"' + (st.views.indexOf(v) >= 0 ? ' checked' : '') + '>' + VIEW_NAMES[v] + ' in rotation</label>';
     }).join('');
@@ -308,7 +310,7 @@
     F.post('setSettings', { settings: {
       views: views,
       viewSeconds: $('viewSeconds').value, holdSeconds: $('holdSeconds').value,
-      daysAhead: $('daysAhead').value, maxEvents: $('maxEvents').value, lunchUrl: $('lunchUrl').value
+      daysAhead: $('daysAhead').value, maxEvents: $('maxEvents').value, lunchUrl: $('lunchUrl').value, lunchImageUrl: $('lunchImageUrl').value
     } }).then(function (r) {
       dirty.display = false;
       apply(r.state); status('saved');

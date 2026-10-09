@@ -46,7 +46,9 @@ function defaultState_() {
       holdSeconds: 30,
       daysAhead: 30,
       maxEvents: 14,
-      lunchUrl: 'https://stpiuscatholicschool.net/lunch'
+      lunchUrl: 'https://stpiuscatholicschool.net/lunch',
+      lunchFilesBase: 'https://files.ecatholic.com/2970/pictures/',
+      lunchImageUrl: ''
     }
   };
 }
@@ -230,6 +232,14 @@ function setSettings_(n) {
     st.lunchUrl = n.lunchUrl.trim();
     CacheService.getScriptCache().remove('lunch');
   }
+  if (typeof n.lunchImageUrl === 'string') {
+    const u = n.lunchImageUrl.trim();
+    if (u === '' || /^https:\/\//.test(u)) {
+      if (u !== st.lunchImageUrl) PROPS.deleteProperty('LUNCH_LAST');
+      st.lunchImageUrl = u;
+      CacheService.getScriptCache().remove('lunch');
+    }
+  }
   saveState_(s);
   return publicState_(s);
 }
@@ -274,14 +284,60 @@ function lunch_(fresh) {
     const hit = cache.get('lunch');
     if (hit) return JSON.parse(hit);
   }
-  const page = getState_().settings.lunchUrl;
-  const res = UrlFetchApp.fetch(page, { muteHttpExceptions: true, followRedirects: true });
-  if (res.getResponseCode() !== 200) throw new Error('lunch page returned ' + res.getResponseCode());
-  const pick = pickLunchImage_(res.getContentText());
-  if (!pick) throw new Error('no lunch image found on ' + page);
-  const out = { url: pick.url, name: pick.name, page: page, checked: new Date().toISOString() };
+  const st = getState_().settings;
+  const notes = [];
+  // 1. The page itself. The school site sits behind a Cloudflare bot challenge, so this
+  //    usually 403s from Google's servers; kept in case that's ever relaxed.
+  let out = null;
+  try {
+    const res = UrlFetchApp.fetch(st.lunchUrl, { muteHttpExceptions: true, followRedirects: true });
+    if (res.getResponseCode() === 200) {
+      const pick = pickLunchImage_(res.getContentText());
+      if (pick) out = { url: pick.url, name: pick.name, source: 'page' };
+      else notes.push('no image on page');
+    } else notes.push('page ' + res.getResponseCode());
+  } catch (e) { notes.push('page error'); }
+  // 2. Guess this month's file from the naming the school has used ("October lunch.png").
+  if (!out) {
+    const g = guessLunchImage_(st.lunchFilesBase);
+    if (g) out = { url: g, name: decodeURIComponent(g.split('/').pop()), source: 'guess' };
+    else notes.push('no guess matched');
+  }
+  // 3. URL pasted in the controller, then the last image that worked.
+  if (!out && st.lunchImageUrl) out = { url: st.lunchImageUrl, name: 'manual', source: 'manual' };
+  if (!out) {
+    const last = PROPS.getProperty('LUNCH_LAST');
+    if (last) out = JSON.parse(last);
+  }
+  if (!out) throw new Error('no lunch image (' + notes.join(', ') + ') — paste the image URL in controller settings');
+  out.checked = new Date().toISOString();
+  out.notes = notes;
+  if (out.source !== 'manual') PROPS.setProperty('LUNCH_LAST', JSON.stringify({ url: out.url, name: out.name, source: 'last good' }));
   cache.put('lunch', JSON.stringify(out), 3 * 3600);
   return out;
+}
+
+function guessLunchImage_(base) {
+  if (!base) return null;
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const now = new Date();
+  const name = MONTHS[now.getMonth()];
+  const folders = [-1, 0].map(function (off) {
+    const d = new Date(now.getFullYear(), now.getMonth() + off, 1);
+    return d.getFullYear() + '/' + (d.getMonth() + 1) + '/';
+  });
+  const stems = [name + ' lunch', name + ' Lunch', name + ' Lunch Menu', name + ' lunch menu', name + ' Menu', name + ' menu'];
+  const exts = ['.png', '.jpg', '.jpeg'];
+  const urls = [];
+  folders.reverse().forEach(function (f) {          // newest folder first
+    stems.forEach(function (s) { exts.forEach(function (x) { urls.push(base + f + encodeURIComponent(s) + x); }); });
+  });
+  const res = UrlFetchApp.fetchAll(urls.map(function (u) { return { url: u, muteHttpExceptions: true }; }));
+  for (let i = 0; i < res.length; i++) {
+    const type = String(res[i].getHeaders()['Content-Type'] || '');
+    if (res[i].getResponseCode() === 200 && type.indexOf('image/') === 0) return urls[i];
+  }
+  return null;
 }
 
 function pickLunchImage_(html) {
