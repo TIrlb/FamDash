@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="robots" content="noindex">
+<title>FamDash</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #161a24;
+    --bg2: #1e2330;
+    --ink: #f4efe6;
+    --muted: #a7a9b4;
+    --line: rgba(255,255,255,.09);
+    --warm: #ffc56b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: radial-gradient(120% 90% at 20% 0%, #222a3b 0%, var(--bg) 60%);
+    color: var(--ink);
+    font-family: 'Nunito', system-ui, sans-serif;
+    -webkit-user-select: none; user-select: none;
+    cursor: none;
+  }
+  h1, h2, .display { font-family: 'Fredoka', 'Nunito', sans-serif; font-weight: 600; }
+
+  .view {
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+    padding: 3.2vh 3.6vw 6vh;
+    opacity: 0; visibility: hidden;
+    transition: opacity .9s ease, visibility 0s linear .9s;
+  }
+  .view.on { opacity: 1; visibility: visible; transition: opacity .9s ease; }
+
+  /* clock — shared */
+  .clock {
+    position: absolute; top: 2.6vh; right: 3.6vw; z-index: 5; text-align: right;
+    text-shadow: 0 2px 12px rgba(0,0,0,.45);
+  }
+  .clock .t { font-family: 'Fredoka', sans-serif; font-size: 7.2vh; line-height: 1; font-weight: 500; letter-spacing: .01em; }
+  .clock .d { font-size: 2.5vh; color: var(--muted); font-weight: 700; margin-top: .4vh; }
+  body.photo-on .clock .d { color: #fff; opacity: .85; }
+
+  /* calendar */
+  #v-calendar h1 { font-size: 5.4vh; margin-bottom: 2.6vh; }
+  #v-calendar h1 span { color: var(--warm); }
+  .agenda { column-count: 2; column-gap: 4vw; column-fill: auto; height: calc(100% - 9vh); }
+  .day { break-inside: avoid; -webkit-column-break-inside: avoid; margin-bottom: 2.4vh; }
+  .day h2 {
+    font-size: 2.7vh; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+    border-bottom: 1px solid var(--line); padding-bottom: .7vh; margin-bottom: 1vh; font-weight: 500;
+  }
+  .day.today h2 { color: var(--warm); }
+  .ev { display: flex; align-items: stretch; gap: 1.4vw; padding: .9vh 0; }
+  .ev .when { width: 9.5vw; min-width: 80px; flex: none; font-weight: 800; font-size: 2.6vh; padding-top: .2vh; font-variant-numeric: tabular-nums; }
+  .ev .when.all { color: var(--muted); font-weight: 700; font-size: 2.2vh; padding-top: .5vh; }
+  .ev .bar { width: 5px; border-radius: 3px; flex: none; }
+  .ev .what { font-size: 2.9vh; font-weight: 700; line-height: 1.2; }
+  .ev .sub { font-size: 2.1vh; color: var(--muted); margin-top: .3vh; font-weight: 500; }
+  .ev.now .when { color: var(--warm); }
+  .empty { color: var(--muted); font-size: 3vh; margin-top: 4vh; }
+
+  /* jars */
+  #v-jars { display: flex; align-items: center; justify-content: center; gap: 6vw; padding-top: 6vh; }
+  .kid { display: flex; flex-direction: column; align-items: center; width: 34vw; max-width: 46vh; }
+  .kid .name { font-family: 'Fredoka', sans-serif; font-size: 6vh; margin-bottom: 1.4vh; display: flex; align-items: center; gap: .6vw; }
+  .kid .jar { width: 100%; }
+  .jar-svg { width: 100%; height: auto; display: block; overflow: visible; filter: drop-shadow(0 18px 28px rgba(0,0,0,.35)); }
+  .jar-goal { font: 700 13px 'Nunito', sans-serif; fill: rgba(255,255,255,.55); }
+  .kid .count { margin-top: 1.8vh; font-size: 3vh; color: var(--muted); font-weight: 700; }
+  .kid .count b { font-family: 'Fredoka', sans-serif; font-size: 6.4vh; color: var(--ink); font-weight: 600; margin-right: .5vw; vertical-align: -0.6vh; }
+  .badge { font-size: 2.2vh; background: var(--warm); color: #3a2400; border-radius: 99px; padding: .4vh 1.1vw; font-family: 'Nunito'; font-weight: 800; }
+  .marble.drop { animation: drop 1s cubic-bezier(.34,1.32,.55,1) both; }
+  .marble.lift { animation: lift 1.1s ease-in both; }
+  @keyframes drop { 0% { transform: translateY(-470px); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(0); } }
+  @keyframes lift { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-420px); opacity: 0; } }
+
+  /* photo */
+  #v-photo { padding: 0; background: #000; }
+  #v-photo .blur { position: absolute; top: -40px; right: -40px; bottom: -40px; left: -40px; background-size: cover; background-position: center; filter: blur(32px) brightness(.55); }
+  #v-photo img { position: absolute; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
+
+  /* footer dots */
+  .dots { position: absolute; bottom: 2.4vh; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 5; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.22); transition: background .4s, width .4s; }
+  .dots i.on { background: rgba(255,255,255,.85); width: 26px; border-radius: 5px; }
+  .dots.hold i.on { background: var(--warm); }
+  .status { position: absolute; bottom: 2.2vh; left: 2vw; font-size: 1.8vh; color: #ff8a7a; z-index: 5; }
+
+  /* setup */
+  #setup { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: none; align-items: center; justify-content: center; background: var(--bg); z-index: 20; cursor: auto; }
+  #setup form { width: min(560px, 90vw); display: grid; gap: 14px; }
+  #setup h1 { font-size: 34px; }
+  #setup p { color: var(--muted); line-height: 1.5; }
+  #setup input { font: inherit; font-size: 16px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg2); color: var(--ink); }
+  #setup button { font: inherit; font-weight: 800; font-size: 17px; padding: 13px; border-radius: 10px; border: 0; background: var(--warm); color: #2b1a00; }
+  #setup a { color: var(--warm); }
+</style>
+</head>
+<body>
+
+<div class="clock"><div class="t" id="clockT"></div><div class="d" id="clockD"></div></div>
+
+<section class="view" id="v-calendar">
+  <h1>Coming <span>up</span></h1>
+  <div class="agenda" id="agenda"></div>
+</section>
+
+<section class="view" id="v-jars"></section>
+
+<section class="view" id="v-photo">
+  <div class="blur" id="photoBlur"></div>
+  <img id="photoImg" alt="">
+</section>
+
+<div class="dots" id="dots"></div>
+<div class="status" id="status"></div>
+
+<div id="setup">
+  <form id="setupForm">
+    <h1>FamDash setup</h1>
+    <p>Open the <b>Display link</b> from the controller's settings on this tablet, or paste the backend details here.</p>
+    <input id="sApi" placeholder="Apps Script web app URL (…/exec)" autocomplete="off">
+    <input id="sTok" placeholder="Token" autocomplete="off">
+    <button type="submit">Save</button>
+    <p>Just looking? <a href="?demo=1">Run the demo</a>.</p>
+  </form>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/jar.js"></script>
+<script>
+(function () {
+  'use strict';
+  var F = window.FamDash;
+
+  /* ---------- setup ---------- */
+  if (!F.config) {
+    document.getElementById('setup').style.display = 'flex';
+    document.getElementById('setupForm').onsubmit = function (e) {
+      e.preventDefault();
+      F.saveConfig(document.getElementById('sApi').value.trim(), document.getElementById('sTok').value.trim());
+      location.reload();
+    };
+    return;
+  }
+
+  var state = null, events = [], photoList = [], photoListAt = 0;
+  var shownCounts = {};           // marble counts last drawn on the jar view
+  var views = ['calendar', 'jars', 'photo'];
+  var current = null, idx = -1, timer = null, holding = false;
+  var preloaded = null;           // {id, url}
+
+  function $(id) { return document.getElementById(id); }
+  function setStatus(msg) { $('status').textContent = msg || ''; }
+
+  /* ---------- clock ---------- */
+  function tick() {
+    var n = new Date();
+    $('clockT').textContent = n.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    $('clockD').textContent = n.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+  tick(); setInterval(tick, 10000);
+
+  /* ---------- data ---------- */
+  function loadState() {
+    return F.get('state').then(function (r) {
+      state = r.state;
+      views = (state.settings.views || views).slice();
+      setStatus('');
+      if (current === 'jars') renderJars();
+      drawDots();
+    }).catch(function (e) { setStatus('⚠ ' + e.message); });
+  }
+  function loadEvents() {
+    return F.get('events').then(function (r) {
+      events = r.events; if (current === 'calendar') renderCalendar();
+    }).catch(function (e) { setStatus('⚠ calendar: ' + e.message); });
+  }
+  function loadPhotoList() {
+    return F.get('photos').then(function (r) { photoList = r.photos; photoListAt = Date.now(); })
+      .catch(function (e) { setStatus('⚠ photos: ' + e.message); });
+  }
+
+  /* ---------- calendar ---------- */
+  function dayKey(d) { return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
+  function dayLabel(d) {
+    var t = new Date(); t.setHours(0, 0, 0, 0);
+    var x = new Date(d); x.setHours(0, 0, 0, 0);
+    var diff = Math.round((x - t) / 86400000);
+    if (diff <= 0) return 'Today';
+    if (diff === 1) return 'Tomorrow';
+    if (diff < 7) return x.toLocaleDateString([], { weekday: 'long' });
+    return x.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function renderCalendar() {
+    var box = $('agenda');
+    if (!events.length) { box.innerHTML = '<div class="empty">Nothing on the calendar. Enjoy it.</div>'; return; }
+    var now = new Date(), groups = [], byKey = {};
+    events.forEach(function (ev) {
+      var s = new Date(ev.start), e = new Date(ev.end);
+      var anchor = s < now ? now : s;           // ongoing / multi-day events land on today
+      var k = dayKey(anchor);
+      if (!byKey[k]) { byKey[k] = { date: anchor, items: [] }; groups.push(byKey[k]); }
+      byKey[k].items.push({ ev: ev, s: s, e: e, now: s <= now && e > now });
+    });
+    box.innerHTML = groups.map(function (g) {
+      var label = dayLabel(g.date);
+      return '<div class="day' + (label === 'Today' ? ' today' : '') + '"><h2>' + label + '</h2>' +
+        g.items.map(function (it) {
+          var ev = it.ev, when;
+          if (ev.allDay) when = '<div class="when all">All day</div>';
+          else if (it.now) when = '<div class="when">Now</div>';
+          else when = '<div class="when">' + it.s.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '</div>';
+          var sub = [ev.location, ev.calendar].filter(Boolean).map(esc).join(' · ');
+          return '<div class="ev' + (it.now ? ' now' : '') + '">' + when +
+            '<div class="bar" style="background:' + esc(ev.color || '#888') + '"></div>' +
+            '<div><div class="what">' + esc(ev.title || '(busy)') + '</div>' +
+            (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div></div>';
+        }).join('') + '</div>';
+    }).join('');
+  }
+
+  /* ---------- jars ---------- */
+  function renderJars() {
+    if (!state) return;
+    var root = $('v-jars');
+    // build skeleton once per kid set
+    var sig = state.kids.map(function (k) { return k.id; }).join(',');
+    if (root.getAttribute('data-sig') !== sig) {
+      root.setAttribute('data-sig', sig);
+      root.innerHTML = state.kids.map(function (k) {
+        return '<div class="kid" id="kid-' + k.id + '"><div class="name"></div><div class="jar"></div><div class="count"></div></div>';
+      }).join('');
+    }
+    state.kids.forEach(function (k) {
+      var box = $('kid-' + k.id);
+      var prev = shownCounts[k.id];
+      var jarBox = box.querySelector('.jar');
+      var drawn = jarBox.getAttribute('data-drawn');
+      var sigK = k.count + '/' + k.goal;
+      var res = { overflow: Number(jarBox.getAttribute('data-over') || 0) };
+      if (drawn !== sigK) {   // redraw only on change, so an in-flight drop animation isn't restarted
+        res = Jar.render(jarBox, k, prev === undefined ? null : prev);
+        jarBox.setAttribute('data-drawn', sigK);
+        jarBox.setAttribute('data-over', res.overflow);
+      }
+      shownCounts[k.id] = k.count;
+      var done = k.count >= k.goal;
+      box.querySelector('.name').innerHTML = '<span style="color:' + esc(k.color) + '">' + esc(k.name) + '</span>' +
+        (done ? '<span class="badge">Goal!</span>' : '');
+      box.querySelector('.count').innerHTML = '<b>' + k.count + '</b> of ' + k.goal +
+        (res.overflow ? ' <span style="color:var(--warm)">(+' + res.overflow + ' extra)</span>' : '');
+    });
+  }
+
+  /* ---------- photos ---------- */
+  var PKEY = 'famdash.lastPhoto';
+  function nextPhotoId() {
+    if (!photoList.length) return null;
+    var last = null; try { last = localStorage.getItem(PKEY); } catch (e) {}
+    var i = -1;
+    photoList.forEach(function (p, j) { if (p.id === last) i = j; });
+    return photoList[(i + 1) % photoList.length].id;
+  }
+  function preload() {
+    var id = nextPhotoId();
+    if (!id) { preloaded = null; return Promise.resolve(); }
+    if (preloaded && preloaded.id === id) return Promise.resolve();
+    return F.get('photo', { id: id }).then(function (r) {
+      preloaded = { id: id, url: 'data:' + r.mime + ';base64,' + r.data };
+    }).catch(function (e) { setStatus('⚠ photo: ' + e.message); preloaded = null; });
+  }
+  function showPhoto() {
+    var p = preloaded;
+    if (!p) return false;
+    $('photoImg').src = p.url;
+    $('photoBlur').style.backgroundImage = 'url("' + p.url + '")';
+    try { localStorage.setItem(PKEY, p.id); } catch (e) {}
+    preloaded = null;
+    // fetch the next one in the background, refreshing the folder list now and then
+    setTimeout(function () {
+      (Date.now() - photoListAt > 15 * 60000 ? loadPhotoList() : Promise.resolve()).then(preload);
+    }, 3000);
+    return true;
+  }
+
+  /* ---------- view cycling ---------- */
+  function drawDots() {
+    $('dots').innerHTML = views.map(function (v) { return '<i class="' + (v === current ? 'on' : '') + '"></i>'; }).join('');
+    $('dots').className = 'dots' + (holding ? ' hold' : '');
+  }
+
+  function show(view) {
+    if (view === 'photo' && !showPhoto()) return false;
+    if (view === 'calendar') renderCalendar();
+    if (view === 'jars') renderJars();
+    var sections = document.querySelectorAll('.view');
+    for (var i = 0; i < sections.length; i++) sections[i].classList.toggle('on', sections[i].id === 'v-' + view);
+    document.body.classList.toggle('photo-on', view === 'photo');
+    current = view;
+    drawDots();
+    return true;
+  }
+
+  function schedule(ms) {
+    clearTimeout(timer);
+    timer = setTimeout(function () { holding = false; next(); }, ms);
+  }
+
+  function next() {
+    var secs = (state && state.settings.viewSeconds) || 20;
+    for (var tries = 0; tries < views.length; tries++) {
+      idx = (idx + 1) % views.length;
+      if (show(views[idx])) { schedule(secs * 1000); return; }
+    }
+    schedule(5000); // nothing showable yet (e.g. only photos, none loaded)
+  }
+
+  function jump(view, holdSecs) {
+    var i = views.indexOf(view);
+    if (i >= 0) idx = i;
+    holding = true;
+    var go = function () { show(view); schedule(holdSecs * 1000); };
+    if (view === 'photo' && !preloaded) {
+      (photoList.length ? preload() : loadPhotoList().then(preload)).then(go);
+    } else go();
+  }
+
+  /* ---------- relay ---------- */
+  function onMessage(msg) {
+    var hold = (state && state.settings.holdSeconds) || 30;
+    if (msg.type === 'show') jump(msg.view, msg.hold || hold);
+    else if (msg.type === 'jar') loadState().then(function () { jump('jars', Math.min(hold, 20)); });
+    else if (msg.type === 'refresh') { loadState(); loadEvents(); }
+    else if (msg.type === 'photos') loadPhotoList().then(function () { preloaded = null; return preload(); });
+    else if (msg.type === 'reload') location.reload();
+  }
+
+  /* ---------- keep awake (newer browsers only; use a kiosk app on old tablets) ---------- */
+  function wake() {
+    if (navigator.wakeLock && navigator.wakeLock.request) navigator.wakeLock.request('screen').catch(function () {});
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) wake(); });
+  wake();
+
+  // nightly reload around 3am keeps an old tablet's memory in check and picks up new versions
+  (function () {
+    var n = new Date(), t = new Date(n); t.setHours(3, 0, 0, 0);
+    if (t <= n) t.setDate(t.getDate() + 1);
+    setTimeout(function () { location.reload(); }, t - n);
+  })();
+
+  /* ---------- boot ---------- */
+  Promise.all([loadState(), loadEvents(), loadPhotoList()]).then(function () {
+    if (state) {
+      state.kids.forEach(function (k) { shownCounts[k.id] = k.count; });
+      F.listen(state.ntfyTopic, onMessage);
+    }
+    preload();
+    next();
+  });
+  setInterval(loadState, 5 * 60000);
+  setInterval(loadEvents, 10 * 60000);
+})();
+</script>
+</body>
+</html>
