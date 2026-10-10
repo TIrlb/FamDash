@@ -43,7 +43,11 @@
     position: absolute; top: 2.6vh; right: 3.6vw; z-index: 5; text-align: right;
     text-shadow: 0 2px 12px rgba(0,0,0,.45);
   }
+  .clock .row { display: flex; align-items: center; justify-content: flex-end; gap: 2.2vw; }
   .clock .t { font-family: 'Fredoka', sans-serif; font-size: 7.2vh; line-height: 1; font-weight: 500; letter-spacing: .01em; }
+  .wx { display: flex; align-items: center; gap: .7vw; font-family: 'Fredoka', sans-serif; font-size: 5vh; font-weight: 500; line-height: 1; }
+  .wx svg { width: 6.2vh; height: 6.2vh; display: block; overflow: visible; }
+  .wx:empty { display: none; }
   .clock .d { font-size: 2.5vh; color: var(--muted); font-weight: 700; margin-top: .4vh; }
   body.photo-on .clock .d { color: #fff; opacity: .85; }
   body.lunch-on .clock .d { display: none; }
@@ -91,8 +95,9 @@
   #v-lunch { display: flex; flex-direction: column; }
   #v-lunch h1 { font-size: 5.4vh; margin-bottom: 2.2vh; }
   #v-lunch h1 span { color: var(--warm); }
-  .lunch-card { flex: 1; min-height: 0; background: #fff; border-radius: 18px; padding: 1.4vh; display: flex; align-items: center; justify-content: center; box-shadow: 0 18px 40px rgba(0,0,0,.35); }
-  .lunch-card img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+  .lunch-wrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  .lunch-card { background: #fff; border-radius: 18px; padding: 1.2vh; box-shadow: 0 18px 40px rgba(0,0,0,.35); line-height: 0; }
+  .lunch-card canvas, .lunch-card img { display: block; border-radius: 8px; }
 
   /* footer dots */
   .dots { position: absolute; bottom: 2.4vh; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 5; }
@@ -113,7 +118,7 @@
 </head>
 <body>
 
-<div class="clock"><div class="t" id="clockT"></div><div class="d" id="clockD"></div></div>
+<div class="clock"><div class="row"><div class="wx" id="wx"></div><div class="t" id="clockT"></div></div><div class="d" id="clockD"></div></div>
 
 <section class="view" id="v-calendar">
   <h1>Coming <span>up</span></h1>
@@ -129,7 +134,7 @@
 
 <section class="view" id="v-lunch">
   <h1>Lunch <span>menu</span></h1>
-  <div class="lunch-card"><img id="lunchImg" alt="School lunch calendar"></div>
+  <div class="lunch-wrap" id="lunchWrap"><div class="lunch-card" id="lunchCard"></div></div>
 </section>
 
 <div class="dots" id="dots"></div>
@@ -207,11 +212,111 @@
       if (lunch && lunch.url === r.url) return;
       return new Promise(function (resolve) {
         var im = new Image();
-        im.onload = function () { lunch = r; $('lunchImg').src = r.url; resolve(); };
+        im.crossOrigin = 'anonymous';   // host sends ACAO:*, so the canvas stays readable for trimming
+        im.onload = function () {
+          var el = trimmed(im);
+          lunch = r;
+          $('lunchCard').innerHTML = '';
+          $('lunchCard').appendChild(el);
+          fitLunch();
+          resolve();
+        };
         im.onerror = function () { setStatus('⚠ lunch image failed to load'); resolve(); };
         im.src = r.url;
       });
     }).catch(function (e) { setStatus('⚠ lunch: ' + e.message); });
+  }
+
+  // Crop away the near-white margins around the menu. Falls back to the full image
+  // if the canvas can't be read (e.g. the host ever drops its CORS header).
+  function trimmed(im) {
+    var W = im.naturalWidth, H = im.naturalHeight;
+    try {
+      var s = Math.min(1, 700 / Math.max(W, H));
+      var sw = Math.max(1, Math.round(W * s)), sh = Math.max(1, Math.round(H * s));
+      var c = document.createElement('canvas'); c.width = sw; c.height = sh;
+      var x = c.getContext('2d'); x.drawImage(im, 0, 0, sw, sh);
+      var d = x.getImageData(0, 0, sw, sh).data;
+      var cols = new Array(sw), rows = new Array(sh), i, j;
+      for (i = 0; i < sw; i++) cols[i] = 0;
+      for (j = 0; j < sh; j++) rows[j] = 0;
+      for (j = 0; j < sh; j++) for (i = 0; i < sw; i++) {
+        var k = (j * sw + i) * 4;
+        if (d[k + 3] > 40 && (d[k] < 232 || d[k + 1] < 232 || d[k + 2] < 232)) { cols[i]++; rows[j]++; }
+      }
+      // ignore specks: a column/row counts only if a few pixels in it are "ink"
+      var minC = Math.max(2, sh * 0.004), minR = Math.max(2, sw * 0.004);
+      var x0 = 0, x1 = sw - 1, y0 = 0, y1 = sh - 1;
+      while (x0 < x1 && cols[x0] < minC) x0++;
+      while (x1 > x0 && cols[x1] < minC) x1--;
+      while (y0 < y1 && rows[y0] < minR) y0++;
+      while (y1 > y0 && rows[y1] < minR) y1--;
+      var pad = Math.round(Math.max(sw, sh) * 0.012);
+      x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
+      x1 = Math.min(sw - 1, x1 + pad); y1 = Math.min(sh - 1, y1 + pad);
+      // back to full-resolution coordinates
+      var X = Math.floor(x0 / s), Y = Math.floor(y0 / s);
+      var CW = Math.min(W - X, Math.ceil((x1 - x0 + 1) / s)), CH = Math.min(H - Y, Math.ceil((y1 - y0 + 1) / s));
+      if (CW < W * 0.25 || CH < H * 0.25) throw new Error('trim looks wrong');
+      var out = document.createElement('canvas');
+      out.width = CW; out.height = CH;
+      out.getContext('2d').drawImage(im, X, Y, CW, CH, 0, 0, CW, CH);
+      out.setAttribute('aria-label', 'School lunch calendar');
+      return out;
+    } catch (e) {
+      var img = document.createElement('img');
+      img.src = im.src; img.alt = 'School lunch calendar';
+      img.width = W; img.height = H;
+      return img;
+    }
+  }
+
+  // Size the trimmed menu to the largest box that fits, keeping its aspect ratio.
+  function fitLunch() {
+    var el = $('lunchCard').firstChild;
+    if (!el) return;
+    var w = el.width || el.naturalWidth, h = el.height || el.naturalHeight;
+    var pad = $('lunchCard').offsetWidth - $('lunchCard').clientWidth + 2 * parseFloat(getComputedStyle($('lunchCard')).paddingLeft || 0);
+    var aw = $('lunchWrap').clientWidth - pad, ah = $('lunchWrap').clientHeight - pad;
+    if (aw <= 0 || ah <= 0) return;
+    var k = Math.min(aw / w, ah / h);
+    el.style.width = Math.floor(w * k) + 'px';
+    el.style.height = Math.floor(h * k) + 'px';
+  }
+  window.addEventListener('resize', fitLunch);
+
+  /* ---------- weather (Open-Meteo: free, no key, CORS-enabled) ---------- */
+  var WX_LAT = 41.7531, WX_LON = -86.1106;   // Granger, IN
+  var WX_ICONS = {
+    sun: '<circle cx="24" cy="24" r="9" fill="#ffc94a"/><g stroke="#ffc94a" stroke-width="3.4" stroke-linecap="round"><path d="M24 4v5M24 39v5M4 24h5M39 24h5M9.9 9.9l3.5 3.5M34.6 34.6l3.5 3.5M9.9 38.1l3.5-3.5M34.6 13.4l3.5-3.5"/></g>',
+    moon: '<path d="M30.5 8.5a15.5 15.5 0 1 0 9 26.6A13 13 0 0 1 30.5 8.5z" fill="#e8e3c9"/>',
+    cloud: '<path d="M14 38h21a8.5 8.5 0 0 0 1.2-16.9A11.5 11.5 0 0 0 14.3 19 9.5 9.5 0 0 0 14 38z" fill="#d9dee7"/>',
+    partly: '<circle cx="17" cy="17" r="7.5" fill="#ffc94a"/><g stroke="#ffc94a" stroke-width="3" stroke-linecap="round"><path d="M17 3v3.5M3 17h3.5M7.1 7.1l2.5 2.5M26.9 7.1l-2.5 2.5"/></g><path d="M17 41h18.5a7.5 7.5 0 0 0 1-14.9 10 10 0 0 0-19.2-1.7A8.4 8.4 0 0 0 17 41z" fill="#e3e7ee"/>',
+    partlyNight: '<path d="M22 6.5a10 10 0 1 0 6 17.3A8.4 8.4 0 0 1 22 6.5z" fill="#e8e3c9"/><path d="M17 41h18.5a7.5 7.5 0 0 0 1-14.9 10 10 0 0 0-19.2-1.7A8.4 8.4 0 0 0 17 41z" fill="#e3e7ee"/>',
+    fog: '<path d="M14 28h21a8.5 8.5 0 0 0 1.2-16.9A11.5 11.5 0 0 0 14.3 9 9.5 9.5 0 0 0 14 28z" fill="#cfd5df"/><g stroke="#aab3c0" stroke-width="3" stroke-linecap="round"><path d="M8 34h32M12 40h24"/></g>',
+    rain: '<path d="M14 30h21a8.5 8.5 0 0 0 1.2-16.9A11.5 11.5 0 0 0 14.3 11 9.5 9.5 0 0 0 14 30z" fill="#c9d0db"/><g stroke="#5eb4ff" stroke-width="3" stroke-linecap="round"><path d="M16 35l-2.5 6M25 35l-2.5 6M34 35l-2.5 6"/></g>',
+    snow: '<path d="M14 30h21a8.5 8.5 0 0 0 1.2-16.9A11.5 11.5 0 0 0 14.3 11 9.5 9.5 0 0 0 14 30z" fill="#d9dee7"/><g fill="#fff"><circle cx="15" cy="37" r="2.4"/><circle cx="24" cy="41" r="2.4"/><circle cx="33" cy="37" r="2.4"/><circle cx="20" cy="45" r="2"/><circle cx="29" cy="45" r="2"/></g>',
+    storm: '<path d="M14 30h21a8.5 8.5 0 0 0 1.2-16.9A11.5 11.5 0 0 0 14.3 11 9.5 9.5 0 0 0 14 30z" fill="#a9b1be"/><path d="M26 30l-6 9h5l-3 8 8-11h-5l3-6z" fill="#ffc94a"/>'
+  };
+  function wxKind(code, day) {
+    if (code === 0 || code === 1) return day ? 'sun' : 'moon';
+    if (code === 2) return day ? 'partly' : 'partlyNight';
+    if (code === 3) return 'cloud';
+    if (code === 45 || code === 48) return 'fog';
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'snow';
+    if (code >= 95) return 'storm';
+    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
+    return 'cloud';
+  }
+  function loadWeather() {
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + WX_LAT + '&longitude=' + WX_LON +
+      '&current=temperature_2m,weather_code,is_day&temperature_unit=fahrenheit&timezone=auto';
+    return fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+      var c = j.current;
+      if (!c) return;
+      $('wx').innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true">' + WX_ICONS[wxKind(c.weather_code, c.is_day === 1)] + '</svg>' +
+        '<span>' + Math.round(c.temperature_2m) + '°</span>';
+    }).catch(function () { /* keep the last reading; weather is decoration */ });
   }
 
   /* ---------- calendar ---------- */
@@ -334,6 +439,7 @@
     for (var i = 0; i < sections.length; i++) sections[i].classList.toggle('on', sections[i].id === 'v-' + view);
     document.body.classList.toggle('photo-on', view === 'photo');
     document.body.classList.toggle('lunch-on', view === 'lunch');
+    if (view === 'lunch') fitLunch();
     current = view;
     drawDots();
     return true;
@@ -399,6 +505,8 @@
   setInterval(loadState, 5 * 60000);
   setInterval(loadEvents, 10 * 60000);
   setInterval(loadLunch, 3 * 3600000);
+  loadWeather();
+  setInterval(loadWeather, 20 * 60000);
 })();
 </script>
 </body>
