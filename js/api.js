@@ -121,8 +121,16 @@
       ev('Nate — swim lesson', at(4, 17, 0, 45), 'Family', F),
       ev('Fall break — no school', allDay(7), 'School', S),
       ev('Pumpkin patch', at(8, 11, 0, 180), 'Family', F),
-      ev('Practice', at(9, 18, 0, 75), 'Team', T)
+      ev('Practice', at(9, 18, 0, 75), 'Team', T),
+      ev('Varsity Football 2026 vs Mishawaka Catholic', at(1, 13, 0, 120), 'Team', T, '1311 S Logan St, Mishawaka, IN 46544, United States'),
+      ev('Varsity Football 2026 - Team Pictures', at(3, 17, 45, 30), 'Team', T, '52553 Fir Rd, Granger, IN 46530'),
+      ev('Ben - Morning Band', at(3, 7, 0, 45), 'Family', F),
+      ev('Soccer practice', at(3, 17, 30, 60), 'Family', F),
+      ev('Varsity Football 2026 - Practice', at(5, 18, 0, 90), 'Team', T, '52553 Fir Rd, Granger, IN 46530'),
+      ev('Ben - Afternoon Band', at(5, 15, 0, 60), 'Family', F),
+      ev('Nate Conference', at(5, 16, 10, 20), 'School', S)
     ];
+    events.sort(function (a, b) { return a.start < b.start ? -1 : 1; });
     var photos = [
       { id: 'p1', grad: ['#ffb36b', '#e0567b'] },
       { id: 'p2', grad: ['#6bc5ff', '#3f5bd8'] },
