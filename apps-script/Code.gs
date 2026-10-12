@@ -48,7 +48,10 @@ function defaultState_() {
       maxEvents: 14,
       lunchUrl: 'https://stpiuscatholicschool.net/lunch',
       lunchFilesBase: 'https://files.ecatholic.com/2970/pictures/',
-      lunchImageUrl: ''
+      lunchImageUrl: '',
+      jarMode: 'separate',
+      jarGoal: 100,
+      jarTitle: 'Family jar'
     }
   };
 }
@@ -238,6 +241,9 @@ function setSettings_(n) {
     st.lunchUrl = n.lunchUrl.trim();
     CacheService.getScriptCache().remove('lunch');
   }
+  if (n.jarMode === 'separate' || n.jarMode === 'combined') st.jarMode = n.jarMode;
+  if (n.jarGoal != null) st.jarGoal = Math.max(5, Math.min(400, Math.round(Number(n.jarGoal)) || st.jarGoal));
+  if (typeof n.jarTitle === 'string' && n.jarTitle.trim()) st.jarTitle = n.jarTitle.trim().slice(0, 24);
   if (typeof n.lunchImageUrl === 'string') {
     const u = n.lunchImageUrl.trim();
     if (u === '' || /^https:\/\//.test(u)) {

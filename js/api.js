@@ -94,6 +94,7 @@
     };
     if (state.settings.views.indexOf('lunch') < 0 && !state.lunchSeen) { state.settings.views.push('lunch'); state.lunchSeen = true; }
     if (!state.settings.lunchUrl) state.settings.lunchUrl = 'https://stpiuscatholicschool.net/lunch';
+    if (!state.settings.jarMode) { state.settings.jarMode = 'separate'; state.settings.jarGoal = 100; state.settings.jarTitle = 'Family jar'; }
     function save() { try { localStorage.setItem(KEYD, JSON.stringify(state)); } catch (e) {} }
     function clone() { return JSON.parse(JSON.stringify(state)); }
 

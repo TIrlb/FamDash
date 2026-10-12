@@ -79,6 +79,7 @@
   .kid { display: flex; flex-direction: column; align-items: center; width: 34vw; max-width: 46vh; }
   .kid .name { font-family: 'Fredoka', sans-serif; font-size: 6vh; margin-bottom: 1.4vh; display: flex; align-items: center; gap: .6vw; }
   .kid .jar { width: 100%; }
+  .kid.solo { width: 46vw; max-width: 47vh; }
   .jar-svg { width: 100%; height: auto; display: block; overflow: visible; filter: drop-shadow(0 18px 28px rgba(0,0,0,.35)); }
   .jar-goal { font: 700 13px 'Nunito', sans-serif; fill: rgba(255,255,255,.55); }
   .kid .count { margin-top: 1.8vh; font-size: 3vh; color: var(--muted); font-weight: 700; }
@@ -415,14 +416,21 @@
     if (!state) return;
     var root = $('v-jars');
     // build skeleton once per kid set
-    var sig = state.kids.map(function (k) { return k.id; }).join(',');
+    var st = state.settings;
+    var jars = state.kids;
+    if (st.jarMode === 'combined') {
+      // one shared jar: total of everyone's marbles, no per-kid breakdown on screen
+      var total = 0; state.kids.forEach(function (k) { total += k.count; });
+      jars = [{ id: 'family', name: st.jarTitle || 'Family jar', count: total, goal: st.jarGoal || 100, color: '#ffc56b' }];
+    }
+    var sig = jars.map(function (k) { return k.id; }).join(',');
     if (root.getAttribute('data-sig') !== sig) {
       root.setAttribute('data-sig', sig);
-      root.innerHTML = state.kids.map(function (k) {
-        return '<div class="kid" id="kid-' + k.id + '"><div class="name"></div><div class="jar"></div><div class="count"></div></div>';
+      root.innerHTML = jars.map(function (k) {
+        return '<div class="kid' + (jars.length === 1 ? ' solo' : '') + '" id="kid-' + k.id + '"><div class="name"></div><div class="jar"></div><div class="count"></div></div>';
       }).join('');
     }
-    state.kids.forEach(function (k) {
+    jars.forEach(function (k) {
       var box = $('kid-' + k.id);
       var prev = shownCounts[k.id];
       var jarBox = box.querySelector('.jar');
