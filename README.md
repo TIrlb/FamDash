@@ -1,6 +1,18 @@
 # FamDash
 
-Family wall dashboard for an old tablet. It cycles between three views (agenda, marble jars, family photo) and is driven from a phone controller.
+Family wall dashboard for an old tablet, driven from a phone controller. It cycles through these views (each can be turned off in Settings, and views with nothing to show are skipped):
+
+| View | Source |
+|---|---|
+| Agenda | Google Calendar (family + any subscribed calendars) |
+| Marble jars | Backend state; side by side or one combined family jar |
+| Photo | Drive folder "FamDash Photos" |
+| Lunch menu | School lunch page image (guessed URL / pasted fallback) |
+| Weather | Open-Meteo (now, 10-hour, 5-day) + NWS KIWX radar loop |
+| Scores | ESPN public site API: last result + next game per followed team |
+| Fantasy | ESPN fantasy API (public league): this week's matchups + standings |
+| Quote wall | Drive folder "FamDash Quotes" |
+| Gratitude | Text notes added from the controller |
 
 | Page | Purpose |
 |---|---|
@@ -45,6 +57,11 @@ From **Settings → Links**, send the controller link to the other parent and th
 
 ### 4. Calendars
 Subscribe to any team or school calendar in Google Calendar under the backend account. Then go to Controller → Settings → Calendars → Load and tick the ones you want.
+
+## Updating the backend
+Front-end changes go live when GitHub Pages rebuilds. Changes to `apps-script/Code.gs` need a paste into the Apps Script editor followed by **Deploy → Manage deployments → Edit → New version**. New views join the rotation automatically, once.
+
+ESPN's site and fantasy APIs are unofficial and undocumented. If ESPN changes them, the Scores or Fantasy view will drop out of the rotation rather than break the display.
 
 ## Notes
 - Front-end JS is kept to ES2017 (no optional chaining) for old tablet browsers.

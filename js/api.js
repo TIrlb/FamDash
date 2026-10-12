@@ -90,10 +90,25 @@
       ],
       calendars: ['family', 'team', 'school'],
       settings: { views: ['calendar', 'jars', 'photo', 'lunch'], viewSeconds: 15, holdSeconds: 30, daysAhead: 30, maxEvents: 14, lunchUrl: 'https://stpiuscatholicschool.net/lunch' },
+      gratitude: [],
       ntfyTopic: 'demo'
     };
     if (state.settings.views.indexOf('lunch') < 0 && !state.lunchSeen) { state.settings.views.push('lunch'); state.lunchSeen = true; }
     if (!state.settings.lunchUrl) state.settings.lunchUrl = 'https://stpiuscatholicschool.net/lunch';
+    var ALL = ['calendar', 'jars', 'photo', 'lunch', 'weather', 'sports', 'fantasy', 'quotes', 'gratitude'];
+    var seenV = state.settings.seenViews || ['calendar', 'jars', 'photo', 'lunch'];
+    ALL.forEach(function (v) { if (seenV.indexOf(v) < 0) { seenV.push(v); if (state.settings.views.indexOf(v) < 0) state.settings.views.push(v); } });
+    state.settings.seenViews = seenV;
+    if (!state.settings.sportsTeams) state.settings.sportsTeams = [
+      { league: 'football/college-football', id: '87', name: 'Notre Dame Fighting Irish' },
+      { league: 'football/nfl', id: '3', name: 'Chicago Bears' },
+      { league: 'basketball/nba', id: '4', name: 'Chicago Bulls' },
+      { league: 'baseball/mlb', id: '16', name: 'Chicago Cubs' }];
+    if (state.settings.fantasyLeagueId == null) state.settings.fantasyLeagueId = 'demo';
+    if (!state.gratitude || !state.gratitude.length) state.gratitude = [
+      { id: 'g1', who: 'Ben', text: 'That Nate let me pick the movie on Friday.', created: new Date(Date.now() - 86400000).toISOString() },
+      { id: 'g2', who: 'Mom', text: 'A warm fall afternoon and nobody had anywhere to be.', created: new Date(Date.now() - 2 * 86400000).toISOString() },
+      { id: 'g3', who: 'Nate', text: 'Grandma\'s chocolate chip cookies.', created: new Date(Date.now() - 3 * 86400000).toISOString() }];
     if (!state.settings.jarMode) { state.settings.jarMode = 'separate'; state.settings.jarGoal = 100; state.settings.jarTitle = 'Family jar'; }
     function save() { try { localStorage.setItem(KEYD, JSON.stringify(state)); } catch (e) {} }
     function clone() { return JSON.parse(JSON.stringify(state)); }
@@ -137,6 +152,53 @@
       { id: 'p2', grad: ['#6bc5ff', '#3f5bd8'] },
       { id: 'p3', grad: ['#9be38f', '#2a8f6b'] }
     ];
+    var quotes = [
+      { id: 'q1', grad: ['#2b3a55', '#1b2232'], text: ['Be kind whenever possible.', 'It is always possible.'] },
+      { id: 'q2', grad: ['#4a2c40', '#24151f'], text: ['Do small things', 'with great love.'] },
+      { id: 'q3', grad: ['#2c4a3e', '#15241e'], text: ['The best way out', 'is always through.'] }
+    ];
+    function quoteSvg(q) {
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">' +
+        '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + q.grad[0] + '"/><stop offset="1" stop-color="' + q.grad[1] + '"/></linearGradient></defs>' +
+        '<rect width="1600" height="1000" fill="url(#g)"/>' +
+        '<text x="800" y="300" font-family="Georgia,serif" font-size="220" fill="#ffc56b" text-anchor="middle" opacity=".7">&#8220;</text>' +
+        q.text.map(function (l, i) { return '<text x="800" y="' + (500 + i * 110) + '" font-family="Georgia,serif" font-size="88" fill="#fff" text-anchor="middle">' + l + '</text>'; }).join('') +
+        '</svg>';
+      return btoa(svg);
+    }
+    var LOGO = function (path) { return 'https://a.espncdn.com/i/teamlogos/' + path; };
+    function dayAt(d, h, m) { var x = new Date(); x.setDate(x.getDate() + d); x.setHours(h, m || 0, 0, 0); return x.toISOString(); }
+    var SPORTS = {
+      'football/college-football:87': { name: 'Notre Dame Fighting Irish', short: 'Notre Dame', logo: LOGO('ncaa/500/87.png'), color: '#0c2340', record: '6-0', standing: 'FBS Independent',
+        last: { date: dayAt(-2, 15, 30), state: 'post', detail: 'Final', home: true, opp: { name: 'Stanford', logo: LOGO('ncaa/500/24.png') }, us: '58', them: '7', result: 'W' },
+        next: { date: dayAt(5, 19, 30), state: 'pre', detail: '', home: false, opp: { name: 'BYU', logo: LOGO('ncaa/500/252.png') }, tv: 'ABC' } },
+      'football/nfl:3': { name: 'Chicago Bears', short: 'Bears', logo: LOGO('nfl/500/chi.png'), color: '#0b162a', record: '3-2', standing: '3rd in NFC North',
+        last: { date: dayAt(-1, 13, 0), state: 'post', detail: 'Final', home: false, opp: { name: 'Packers', logo: LOGO('nfl/500/gb.png') }, us: '7', them: '31', result: 'L' },
+        next: { date: dayAt(6, 13, 0), state: 'pre', detail: '', home: false, opp: { name: 'Falcons', logo: LOGO('nfl/500/atl.png') }, tv: 'FOX' } },
+      'basketball/nba:4': { name: 'Chicago Bulls', short: 'Bulls', logo: LOGO('nba/500/chi.png'), color: '#ce1141', record: '1-2', standing: 'Preseason',
+        live: { date: dayAt(0, 19, 0), state: 'in', detail: '3rd 4:12', home: true, opp: { name: 'Bucks', logo: LOGO('nba/500/mil.png') }, us: '78', them: '74' },
+        last: { date: dayAt(-1, 21, 0), state: 'post', detail: 'Final', home: false, opp: { name: 'Nuggets', logo: LOGO('nba/500/den.png') }, us: '128', them: '133', result: 'L' },
+        next: { date: dayAt(2, 20, 0), state: 'pre', detail: '', home: false, opp: { name: 'Bucks', logo: LOGO('nba/500/mil.png') }, tv: '' } },
+      'baseball/mlb:16': { name: 'Chicago Cubs', short: 'Cubs', logo: LOGO('mlb/500/chc.png'), color: '#0e3386', record: '89-73', standing: 'Season over',
+        last: { date: dayAt(-11, 22, 0), state: 'post', detail: 'Final', home: false, opp: { name: 'Padres', logo: LOGO('mlb/500/sd.png') }, us: '1', them: '4', result: 'L' }, next: null }
+    };
+    var LEAGUE_NAMES = { 'football/nfl': 'NFL', 'football/college-football': 'College football', 'basketball/mens-college-basketball': "Men's college basketball",
+      'basketball/womens-college-basketball': "Women's college basketball", 'basketball/nba': 'NBA', 'basketball/wnba': 'WNBA', 'baseball/mlb': 'MLB' };
+    var DEMO_TEAMS = {
+      'football/college-football': [['87', 'Notre Dame Fighting Irish'], ['130', 'Michigan Wolverines'], ['194', 'Ohio State Buckeyes'], ['2509', 'Purdue Boilermakers'], ['84', 'Indiana Hoosiers']],
+      'basketball/mens-college-basketball': [['87', 'Notre Dame Fighting Irish'], ['2509', 'Purdue Boilermakers'], ['84', 'Indiana Hoosiers']],
+      'basketball/womens-college-basketball': [['87', 'Notre Dame Fighting Irish'], ['41', 'UConn Huskies'], ['2509', 'Purdue Boilermakers']],
+      'basketball/nba': [['4', 'Chicago Bulls'], ['11', 'Indiana Pacers'], ['15', 'Milwaukee Bucks']],
+      'basketball/wnba': [['19', 'Chicago Sky'], ['5', 'Indiana Fever']],
+      'baseball/mlb': [['16', 'Chicago Cubs'], ['4', 'Chicago White Sox'], ['5', 'Cleveland Guardians']],
+      'football/nfl': [['3', 'Chicago Bears'], ['11', 'Indianapolis Colts'], ['8', 'Detroit Lions']]
+    };
+    var FANTASY_TEAMS = [
+      { id: 1, name: 'Touchdown Turtles', abbrev: 'TT', owner: 'Dad', logo: 'https://g.espncdn.com/lm-static/ffl/images/default_logos/3.svg', wins: 3, losses: 1, ties: 0, pf: 512.4, seed: 1 },
+      { id: 2, name: 'Blitz Bros', abbrev: 'BB', owner: 'Ben', logo: 'https://g.espncdn.com/lm-static/ffl/images/default_logos/19.svg', wins: 2, losses: 2, ties: 0, pf: 488.1, seed: 2 },
+      { id: 3, name: 'End Zone Express', abbrev: 'EZE', owner: 'Nate', logo: 'https://g.espncdn.com/lm-static/ffl/images/default_logos/7.svg', wins: 2, losses: 2, ties: 0, pf: 470.9, seed: 3 },
+      { id: 4, name: 'Fourth & Long', abbrev: 'FL', owner: 'Mom', logo: 'https://g.espncdn.com/lm-static/ffl/images/default_logos/12.svg', wins: 1, losses: 3, ties: 0, pf: 431.6, seed: 4 }
+    ];
     function photoSvg(p, i) {
       var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1067" viewBox="0 0 1600 1067">' +
         '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + p.grad[0] + '"/><stop offset="1" stop-color="' + p.grad[1] + '"/></linearGradient></defs>' +
@@ -161,12 +223,27 @@
             c.selected = state.calendars.indexOf(c.id) >= 0;
             return c;
           }) };
-        else if (action === 'photos') r = { ok: true, photos: photos.map(function (x) { return { id: x.id }; }) };
+        else if (action === 'photos') r = { ok: true, photos: (p.kind === 'quotes' ? quotes : photos).map(function (x) { return { id: x.id }; }) };
+        else if (action === 'gratitude') r = { ok: true, notes: state.gratitude.slice() };
+        else if (action === 'teams') r = { ok: true, teams: (DEMO_TEAMS[p.league] || []).map(function (t) { return { id: t[0], name: t[1] }; }) };
+        else if (action === 'sports') r = { ok: true, teams: state.settings.sportsTeams.map(function (t) {
+          var d = SPORTS[t.league + ':' + t.id];
+          return Object.assign({ league: t.league, leagueName: LEAGUE_NAMES[t.league], id: t.id, name: t.name, short: t.name, logo: '', record: '', last: null, next: null }, d || {});
+        }) };
+        else if (action === 'fantasy') r = state.settings.fantasyLeagueId ? { ok: true, league: 'Demo League', season: 2026, week: 5,
+          matchups: [
+            { home: { team: FANTASY_TEAMS[0], points: 112.46, projected: 131.2 }, away: { team: FANTASY_TEAMS[2], points: 98.3, projected: 120.5 }, winner: 'UNDECIDED' },
+            { home: { team: FANTASY_TEAMS[1], points: 121.08, projected: 124.9 }, away: { team: FANTASY_TEAMS[3], points: 87.72, projected: 101.4 }, winner: 'UNDECIDED' }],
+          standings: FANTASY_TEAMS } : { ok: true, league: null };
         else if (action === 'lunch') r = { ok: true, name: 'October lunch.png',
           url: 'https://files.ecatholic.com/2970/pictures/2026/9/October%20lunch.png?t=1790092656000' };
         else if (action === 'photo') {
-          var i = 0; photos.forEach(function (x, j) { if (x.id === p.id) i = j; });
-          r = { ok: true, mime: 'image/svg+xml', data: photoSvg(photos[i], i) };
+          var qi = -1; quotes.forEach(function (x, j) { if (x.id === p.id) qi = j; });
+          if (qi >= 0) r = { ok: true, mime: 'image/svg+xml', data: quoteSvg(quotes[qi]) };
+          else {
+            var i = 0; photos.forEach(function (x, j) { if (x.id === p.id) i = j; });
+            r = { ok: true, mime: 'image/svg+xml', data: photoSvg(photos[i], i) };
+          }
         }
         return new Promise(function (res) { setTimeout(function () { res(r); }, 150); });
       },
@@ -178,8 +255,13 @@
         });
         if (action === 'setSettings') Object.assign(state.settings, b.settings);
         if (action === 'setCalendars') state.calendars = b.ids;
+        if (action === 'addGratitude') state.gratitude.unshift({ id: 'g' + Date.now(), who: b.who || '', text: b.text, created: new Date().toISOString() });
+        if (action === 'deleteGratitude') state.gratitude = state.gratitude.filter(function (g) { return g.id !== b.id; });
         save();
-        return new Promise(function (res) { setTimeout(function () { res({ ok: true, state: clone() }); }, 200); });
+        var out = { ok: true, state: clone() };
+        if (action === 'addGratitude' || action === 'deleteGratitude') out = { ok: true, notes: state.gratitude.slice() };
+        if (action === 'upload') out = { ok: true, id: 'demo' };
+        return new Promise(function (res) { setTimeout(function () { res(out); }, 200); });
       }
     };
     // Cross-tab demo relay so control.html in one tab drives index.html in another.

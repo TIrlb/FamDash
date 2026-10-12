@@ -71,6 +71,21 @@
   .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .links { display: grid; gap: 8px; }
 
+  select, textarea {
+    font: 700 16px 'Nunito', sans-serif; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--card2); color: var(--ink); width: 100%;
+  }
+  textarea { resize: vertical; min-height: 84px; font-weight: 600; line-height: 1.4; }
+  .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .seg3 .btn { padding: 13px 6px; font-size: 15px; }
+  .up2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .up2 label.btn { display: block; text-align: center; font-size: 16px; }
+  .list { display: grid; gap: 8px; }
+  .li { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 12px; padding: 10px 12px; font-size: 15px; font-weight: 700; }
+  .li .grow { flex: 1; min-width: 0; }
+  .li .sub { color: var(--muted); font-size: 12px; font-weight: 700; }
+  .li .x { border: 0; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; padding: 2px 6px; }
+  .card2 { background: var(--card); border-radius: 16px; padding: 14px; display: grid; gap: 10px; }
   #setup { display: none; }
   #setup input { margin-bottom: 10px; }
 </style>
@@ -91,19 +106,37 @@
   <div class="kids" id="kids"></div>
 
   <h2>Show on screen</h2>
-  <div class="seg">
+  <div class="seg3">
     <button class="btn" data-show="calendar">Calendar</button>
     <button class="btn" data-show="jars">Jars</button>
+    <button class="btn" data-show="weather">Weather</button>
     <button class="btn" data-show="photo">Photo</button>
-    <button class="btn" data-show="lunch">Lunch menu</button>
+    <button class="btn" data-show="quotes">Quote</button>
+    <button class="btn" data-show="gratitude">Gratitude</button>
+    <button class="btn" data-show="sports">Scores</button>
+    <button class="btn" data-show="fantasy">Fantasy</button>
+    <button class="btn" data-show="lunch">Lunch</button>
   </div>
   <p class="note" id="holdNote"></p>
 
-  <h2>Photos</h2>
-  <label class="btn primary" style="display:block;text-align:center;font-size:16px;color:#2b1a00">
-    Add photos<input type="file" id="file" accept="image/*" multiple style="display:none">
-  </label>
-  <p class="note" id="upNote">Resized on your phone before upload. You can also drop photos straight into the "FamDash Photos" Drive folder.</p>
+  <h2>Gratitude</h2>
+  <div class="card2">
+    <input type="text" id="grWho" list="grNames" placeholder="Who's grateful? (optional)" maxlength="24">
+    <datalist id="grNames"></datalist>
+    <textarea id="grText" maxlength="400" placeholder="What are we grateful for?"></textarea>
+    <button class="btn primary" id="grAdd">Add to the wall</button>
+  </div>
+  <details id="grListBox" style="margin-top:10px">
+    <summary id="grCount">Notes</summary>
+    <div class="set"><div class="list" id="grList"></div></div>
+  </details>
+
+  <h2>Photos &amp; quotes</h2>
+  <div class="up2">
+    <label class="btn primary" style="color:#2b1a00">Add photos<input type="file" id="file" accept="image/*" multiple style="display:none"></label>
+    <label class="btn" >Add quotes<input type="file" id="fileQ" accept="image/*" multiple style="display:none"></label>
+  </div>
+  <p class="note" id="upNote">Resized on your phone before upload. You can also drop images straight into the "FamDash Photos" or "FamDash Quotes" Drive folders.</p>
 
   <details id="settings">
     <summary>Settings</summary>
@@ -134,6 +167,32 @@
       </div>
       <p class="note" style="margin-top:-6px">Combined mode adds everyone's marbles into one jar on the display. The +/− buttons above still track per kid, so you can switch back anytime.</p>
       <button class="btn primary" id="saveSettings">Save settings</button>
+
+      <h3>Teams to follow</h3>
+      <div class="list" id="teamList"></div>
+      <div class="card2" style="background:var(--card2)">
+        <select id="tmLeague">
+          <option value="">Add a team: pick a league…</option>
+          <option value="football/college-football">College football</option>
+          <option value="basketball/mens-college-basketball">Men's college basketball</option>
+          <option value="basketball/womens-college-basketball">Women's college basketball</option>
+          <option value="football/nfl">NFL</option>
+          <option value="basketball/nba">NBA</option>
+          <option value="basketball/wnba">WNBA</option>
+          <option value="baseball/mlb">MLB</option>
+        </select>
+        <input type="text" id="tmFilter" placeholder="Type to filter teams…" style="display:none" autocomplete="off">
+        <select id="tmTeam" size="6" style="display:none"></select>
+        <button class="btn primary" id="tmAdd" style="display:none">Add team</button>
+      </div>
+      <p class="note" style="margin-top:-4px">Shows each team's last result and next game. Up to 10 teams; remove the out-of-season ones anytime.</p>
+
+      <h3>Fantasy football</h3>
+      <div class="row2">
+        <label>ESPN league ID<input type="text" id="fantasyLeagueId" inputmode="numeric" autocomplete="off"></label>
+        <button class="btn small ghost" id="saveFantasy" style="align-self:end">Save league</button>
+      </div>
+      <p class="note" style="margin-top:-6px">The number after <b>leagueId=</b> in your ESPN league URL. The league must be public. Leave blank to hide the view.</p>
 
       <h3>Calendars</h3>
       <p class="note" style="margin-top:0">Subscribe to a team calendar in Google Calendar (as the account that runs the backend), then tick it here.</p>
@@ -171,6 +230,7 @@
   function apply(s) {
     state = s;
     renderKids();
+    renderTeams();
     $('holdNote').textContent = 'Holds for ' + s.settings.holdSeconds + 's, then resumes cycling.';
   }
 
@@ -247,7 +307,7 @@
     });
   }
 
-  $('file').addEventListener('change', function () {
+  function uploadFiles(kind) { return function () {
     var files = Array.prototype.slice.call(this.files || []);
     this.value = '';
     if (!files.length) return;
@@ -257,18 +317,100 @@
       return p.then(function () {
         return resize(f).then(function (b64) {
           var base = (f.name || 'photo').replace(/\.[^.]+$/, '');
-          return F.post('upload', { name: new Date().toISOString().slice(0, 10) + ' ' + base + '.jpg', mime: 'image/jpeg', data: b64 });
+          return F.post('upload', { kind: kind, name: new Date().toISOString().slice(0, 10) + ' ' + base + '.jpg', mime: 'image/jpeg', data: b64 });
         }).then(function () { done++; }, function () { failed++; })
           .then(function () { $('upNote').textContent = 'Uploading ' + (done + failed) + ' of ' + files.length + '…'; });
       });
     }, Promise.resolve()).then(function () {
-      $('upNote').textContent = done + ' uploaded' + (failed ? ', ' + failed + ' failed' : '') + '.';
-      F.poke(state.ntfyTopic, { type: 'photos' });
+      $('upNote').textContent = done + (kind === 'quotes' ? ' quote' : ' photo') + (done === 1 ? '' : 's') + ' uploaded' + (failed ? ', ' + failed + ' failed' : '') + '.';
+      F.poke(state.ntfyTopic, { type: 'photos', kind: kind });
     });
+  }; }
+  $('file').addEventListener('change', uploadFiles('photos'));
+  $('fileQ').addEventListener('change', uploadFiles('quotes'));
+
+  /* ---------- gratitude ---------- */
+  var notes = [];
+  function renderNotes() {
+    $('grCount').textContent = notes.length ? 'Notes on the wall (' + notes.length + ')' : 'No notes yet';
+    $('grList').innerHTML = notes.map(function (n) {
+      return '<div class="li"><div class="grow">' + esc(n.text) + '<div class="sub">' + (n.who ? esc(n.who) + ' · ' : '') +
+        new Date(n.created).toLocaleDateString([], { month: 'short', day: 'numeric' }) + '</div></div>' +
+        '<button class="x" data-del="' + esc(n.id) + '" aria-label="Remove note">×</button></div>';
+    }).join('');
+    var names = (state ? state.kids.map(function (k) { return k.name; }) : []).concat(['Mom', 'Dad', 'Everyone']);
+    $('grNames').innerHTML = names.map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
+  }
+  function loadNotes() { return F.get('gratitude').then(function (r) { notes = r.notes || []; renderNotes(); }).catch(function () {}); }
+  $('grAdd').onclick = function () {
+    var text = $('grText').value.trim();
+    if (!text) { status('write a note first', true); return; }
+    $('grAdd').disabled = true; status('saving…');
+    F.post('addGratitude', { who: $('grWho').value.trim(), text: text }).then(function (r) {
+      notes = r.notes; renderNotes(); $('grText').value = ''; status('added');
+      F.poke(state.ntfyTopic, { type: 'gratitude' });
+    }).catch(function (e) { status('⚠ ' + e.message, true); }).then(function () { $('grAdd').disabled = false; });
+  };
+  $('grList').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-del]'); if (!b) return;
+    status('removing…');
+    F.post('deleteGratitude', { id: b.getAttribute('data-del') }).then(function (r) { notes = r.notes; renderNotes(); status('removed'); })
+      .catch(function (err) { status('⚠ ' + err.message, true); });
   });
 
+  /* ---------- teams to follow ---------- */
+  var LEAGUE_SHORT = { 'football/college-football': 'CFB', 'basketball/mens-college-basketball': 'MBB', 'basketball/womens-college-basketball': 'WBB',
+    'football/nfl': 'NFL', 'basketball/nba': 'NBA', 'basketball/wnba': 'WNBA', 'baseball/mlb': 'MLB' };
+  var teamCache = {};
+  function renderTeams() {
+    var list = state.settings.sportsTeams || [];
+    $('teamList').innerHTML = list.length ? list.map(function (t, i) {
+      return '<div class="li"><div class="grow">' + esc(t.name) + '<div class="sub">' + (LEAGUE_SHORT[t.league] || t.league) + '</div></div>' +
+        '<button class="x" data-rm="' + i + '" aria-label="Remove team">×</button></div>';
+    }).join('') : '<p class="note" style="margin:0">No teams yet.</p>';
+  }
+  function saveTeams(list) {
+    status('saving…');
+    return F.post('setSettings', { settings: { sportsTeams: list } }).then(function (r) {
+      apply(r.state); status('saved'); F.poke(state.ntfyTopic, { type: 'refresh' });
+    }).catch(function (e) { status('⚠ ' + e.message, true); });
+  }
+  $('teamList').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-rm]'); if (!b) return;
+    var list = (state.settings.sportsTeams || []).slice();
+    list.splice(Number(b.getAttribute('data-rm')), 1);
+    saveTeams(list);
+  });
+  function fillTeams() {
+    var lg = $('tmLeague').value, q = $('tmFilter').value.trim().toLowerCase();
+    var teams = (teamCache[lg] || []).filter(function (t) { return !q || t.name.toLowerCase().indexOf(q) >= 0 || (t.abbr || '').toLowerCase() === q; });
+    $('tmTeam').innerHTML = teams.slice(0, 200).map(function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join('');
+    if (teams.length) $('tmTeam').selectedIndex = 0;
+  }
+  $('tmLeague').addEventListener('change', function () {
+    var lg = this.value, show = !!lg;
+    ['tmFilter', 'tmTeam', 'tmAdd'].forEach(function (id) { $(id).style.display = show ? '' : 'none'; });
+    if (!lg) return;
+    $('tmFilter').value = '';
+    if (teamCache[lg]) { fillTeams(); return; }
+    $('tmTeam').innerHTML = '<option>Loading…</option>';
+    F.get('teams', { league: lg }).then(function (r) { teamCache[lg] = r.teams; fillTeams(); })
+      .catch(function (e) { $('tmTeam').innerHTML = '<option>' + esc(e.message) + '</option>'; });
+  });
+  $('tmFilter').addEventListener('input', fillTeams);
+  $('tmAdd').onclick = function () {
+    var lg = $('tmLeague').value, opt = $('tmTeam').options[$('tmTeam').selectedIndex];
+    if (!lg || !opt || !/^\d+$/.test(opt.value)) { status('pick a team', true); return; }
+    var list = (state.settings.sportsTeams || []).slice();
+    if (list.some(function (t) { return t.league === lg && t.id === opt.value; })) { status('already following', true); return; }
+    if (list.length >= 10) { status('10 teams max', true); return; }
+    list.push({ league: lg, id: opt.value, name: opt.textContent });
+    saveTeams(list).then(function () { $('tmFilter').value = ''; fillTeams(); });
+  };
+
   /* ---------- settings ---------- */
-  var VIEW_NAMES = { calendar: 'Calendar', jars: 'Marble jars', photo: 'Photo', lunch: 'Lunch menu' };
+  var VIEW_NAMES = { calendar: 'Calendar', jars: 'Marble jars', photo: 'Photo', lunch: 'Lunch menu', weather: 'Weather',
+    sports: 'Scores', fantasy: 'Fantasy football', quotes: 'Quote wall', gratitude: 'Gratitude' };
 
   // Unsaved edits in a settings section are never overwritten by a background refresh.
   var dirty = { kids: false, display: false };
@@ -299,6 +441,7 @@
     $('jarMode').value = st.jarMode || 'separate';
     $('jarTitle').value = st.jarTitle || 'Family jar';
     $('jarGoal').value = st.jarGoal || 100;
+    $('fantasyLeagueId').value = st.fantasyLeagueId || '';
     $('viewChecks').innerHTML = Object.keys(VIEW_NAMES).map(function (v) {
       return '<label class="check"><input type="checkbox" value="' + v + '"' + (st.views.indexOf(v) >= 0 ? ' checked' : '') + '>' + VIEW_NAMES[v] + ' in rotation</label>';
     }).join('');
@@ -330,6 +473,15 @@
       dirty.display = false;
       apply(r.state); status('saved');
       F.poke(state.ntfyTopic, { type: 'refresh' });
+    }).catch(function (e) { status('⚠ ' + e.message, true); });
+  };
+
+  $('saveFantasy').onclick = function () {
+    var id = $('fantasyLeagueId').value.trim();
+    if (!/^\d*$/.test(id)) { status('league ID is digits only', true); return; }
+    status('saving…');
+    F.post('setSettings', { settings: { fantasyLeagueId: id } }).then(function (r) {
+      apply(r.state); status('saved'); F.poke(state.ntfyTopic, { type: 'refresh' });
     }).catch(function (e) { status('⚠ ' + e.message, true); });
   };
 
@@ -374,7 +526,7 @@
     })
       .catch(function (e) { status('⚠ ' + e.message, true); });
   }
-  load();
+  load().then(loadNotes);
   // pick up the other parent's changes when the app comes back to the foreground
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden && !Object.keys(pending).some(function (k) { return pending[k]; })) load();

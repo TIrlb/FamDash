@@ -51,6 +51,8 @@
   .clock .d { font-size: 2.5vh; color: var(--muted); font-weight: 700; margin-top: .4vh; }
   body.photo-on .clock .d { color: #fff; opacity: .85; }
   body.lunch-on .clock .d { display: none; }
+  body.photo-on .clock, body.quotes-on .clock { text-shadow: 0 2px 14px rgba(0,0,0,.7); }
+  body.quotes-on .clock .d { color: #fff; opacity: .85; }
 
   /* calendar */
   #v-calendar { display: flex; flex-direction: column; }
@@ -103,6 +105,100 @@
   .lunch-card { background: #fff; border-radius: 18px; padding: 1.2vh; box-shadow: 0 18px 40px rgba(0,0,0,.35); line-height: 0; }
   .lunch-card canvas, .lunch-card img { display: block; border-radius: 8px; }
 
+  /* shared page layout for the newer views */
+  .page { display: flex; flex-direction: column; }
+  .page > h1 { font-size: 5.4vh; margin-bottom: 5vh; flex: none; }
+  .page > h1 span { color: var(--warm); }
+  .page > .body { flex: 1; min-height: 0; }
+  .card { background: rgba(255,255,255,.045); border: 1px solid var(--line); border-radius: 2vh; }
+
+  /* weather */
+  #v-weather .body { display: grid; grid-template-columns: 1.4fr 1fr; gap: 3vw; }
+  .wx-left { display: flex; flex-direction: column; gap: 2.4vh; min-height: 0; }
+  .wx-now { display: flex; align-items: center; gap: 2.4vw; }
+  .wx-now svg { width: 13vh; height: 13vh; overflow: visible; flex: none; }
+  .wx-now .big { font-family: 'Fredoka', sans-serif; font-size: 11vh; line-height: 1; font-weight: 500; }
+  .wx-now .desc { font-size: 3vh; font-weight: 800; }
+  .wx-now .meta { font-size: 2.3vh; color: var(--muted); font-weight: 700; margin-top: .6vh; }
+  .wx-hours { display: flex; padding: 1.4vh .6vw; }
+  .wx-hours > div { flex: 1; text-align: center; }
+  .wx-hours .h { font-size: 1.9vh; color: var(--muted); font-weight: 800; }
+  .wx-hours svg { width: 4.6vh; height: 4.6vh; margin: .7vh auto; display: block; overflow: visible; }
+  .wx-hours .t { font-family: 'Fredoka', sans-serif; font-size: 2.8vh; }
+  .wx-hours .p { font-size: 1.7vh; color: #7cc4ff; font-weight: 800; min-height: 2.1vh; }
+  .wx-days { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: space-around; padding: .6vh 1.4vw; }
+  .wx-day { display: grid; grid-template-columns: 7.5vw 5vh 4.2vw 3.6vw 1fr 3.6vw; align-items: center; gap: 1vw; font-size: 2.6vh; font-weight: 800; }
+  .wx-day svg { width: 4.6vh; height: 4.6vh; overflow: visible; }
+  .wx-day .p { color: #7cc4ff; font-size: 2vh; }
+  .wx-day .lo { color: var(--muted); text-align: right; }
+  .wx-day .bar { height: .8vh; border-radius: .4vh; background: rgba(255,255,255,.08); position: relative; }
+  .wx-day .bar i { position: absolute; top: 0; bottom: 0; border-radius: .4vh; background: linear-gradient(90deg, #7cc4ff, #ffc56b); }
+  .wx-radar { display: flex; flex-direction: column; padding: 1.4vh; min-height: 0; }
+  .wx-radar .img { flex: 1; min-height: 0; border-radius: 1.2vh; background: #0d1018 center / contain no-repeat; }
+  .wx-radar .cap { font-size: 1.9vh; color: var(--muted); font-weight: 700; margin-top: 1vh; }
+
+  /* sports */
+  .sp-grid { display: grid; gap: 2vh 2vw; height: 100%; grid-auto-rows: 1fr; }
+  .sp-card { padding: 2vh 1.6vw; display: flex; flex-direction: column; gap: 1.3vh; min-height: 0; overflow: hidden; }
+  .sp-head { display: flex; align-items: center; gap: 1.2vw; }
+  .sp-head img { width: 6.4vh; height: 6.4vh; object-fit: contain; flex: none; }
+  .sp-head .nm { font-family: 'Fredoka', sans-serif; font-size: 3.4vh; line-height: 1.1; }
+  .sp-head .rec { font-size: 2vh; color: var(--muted); font-weight: 700; }
+  .sp-row { display: flex; align-items: center; gap: .8vw; font-size: 2.5vh; font-weight: 700; white-space: nowrap; overflow: hidden; }
+  .sp-row .lbl { width: 4.2vw; flex: none; font-size: 1.8vh; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .sp-row img { width: 3.4vh; height: 3.4vh; object-fit: contain; flex: none; }
+  .sp-row .res { font-family: 'Fredoka', sans-serif; font-weight: 600; min-width: 1.6em; }
+  .sp-row .res.W { color: #5fd38d; } .sp-row .res.L { color: #ff8a7a; }
+  .sp-row .dim { color: var(--muted); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+  .pill { font-size: 1.7vh; font-weight: 800; padding: .3vh .7vw; border-radius: 99px; background: #e2364a; color: #fff; letter-spacing: .06em; }
+  .sp-opp { display: inline-flex; align-items: center; gap: .4vw; }
+  .sp-grid.roomy .sp-card { padding: 3vh 2.2vw; gap: 2.4vh; }
+  .sp-grid.roomy .sp-head img { width: 9vh; height: 9vh; }
+  .sp-grid.roomy .sp-head .nm { font-size: 4.4vh; }
+  .sp-grid.roomy .sp-head .rec { font-size: 2.4vh; }
+  .sp-grid.roomy .sp-row { font-size: 3.1vh; }
+  .sp-grid.roomy .sp-row img { width: 4.2vh; height: 4.2vh; }
+  .sp-grid.roomy .sp-row .lbl { font-size: 2vh; width: 5vw; }
+  .sp-grid.compact .sp-head img { width: 5vh; height: 5vh; }
+  .sp-grid.compact .sp-head .nm { font-size: 2.8vh; }
+  .sp-grid.compact .sp-row { font-size: 2.1vh; }
+
+  /* fantasy */
+  #v-fantasy .body { display: grid; grid-template-columns: 1.7fr 1fr; gap: 3vw; }
+  .ff-list { display: grid; gap: 2vh; align-content: start; }
+  .ff-list.two { grid-template-columns: 1fr 1fr; }
+  .ff-match { padding: 1.4vh 1.4vw; }
+  .ff-side { display: flex; align-items: center; gap: 1vw; padding: .9vh 0; }
+  .ff-side + .ff-side { border-top: 1px solid var(--line); }
+  .ff-side img { width: 5.4vh; height: 5.4vh; border-radius: 50%; background: rgba(255,255,255,.08); flex: none; object-fit: cover; }
+  .ff-side .who { flex: 1; min-width: 0; }
+  .ff-side .tn { font-family: 'Fredoka', sans-serif; font-size: 3vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ff-side .ow { font-size: 1.9vh; color: var(--muted); font-weight: 700; }
+  .ff-side .pts { text-align: right; }
+  .ff-side .pts b { font-family: 'Fredoka', sans-serif; font-size: 4.4vh; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .ff-side .pts small { display: block; font-size: 1.8vh; color: var(--muted); font-weight: 700; }
+  .ff-side.lead .pts b { color: var(--warm); }
+  .ff-stand { padding: 2vh 1.6vw; align-self: start; }
+  .ff-stand h2 { font-size: 2.4vh; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; margin-bottom: 1.2vh; }
+  .ff-stand table { width: 100%; border-collapse: collapse; font-size: 2.5vh; font-weight: 700; }
+  .ff-stand td { padding: .9vh 0; border-top: 1px solid var(--line); white-space: nowrap; }
+  .ff-stand td.n { color: var(--muted); width: 1.6em; padding-right: .8vw; }
+  .ff-stand td.t { max-width: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .ff-stand td.r { text-align: right; padding-left: 1vw; font-variant-numeric: tabular-nums; }
+
+  /* quotes (same frame as photos) */
+  #v-quotes { padding: 0; background: #000; }
+  #v-quotes .blur { position: absolute; top: -40px; right: -40px; bottom: -40px; left: -40px; background-size: cover; background-position: center; filter: blur(32px) brightness(.45); }
+  #v-quotes img { position: absolute; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
+
+  /* gratitude */
+  #v-gratitude .body { display: flex; align-items: center; justify-content: center; }
+  .gr-card { max-width: 78vw; padding: 6vh 5vw; text-align: center; position: relative; background: linear-gradient(160deg, rgba(255,197,107,.12), rgba(255,255,255,.03)); }
+  .gr-card .mark { font-family: Georgia, serif; font-size: 16vh; line-height: .6; color: var(--warm); opacity: .55; height: 7vh; }
+  .gr-card .txt { font-family: 'Fredoka', sans-serif; font-weight: 500; line-height: 1.25; }
+  .gr-card .by { margin-top: 3.4vh; font-size: 2.8vh; color: var(--muted); font-weight: 800; }
+  .gr-card .by b { color: var(--ink); }
+
   /* footer dots */
   .dots { position: absolute; bottom: 2.4vh; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 5; }
   .dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.22); transition: background .4s, width .4s; }
@@ -141,6 +237,41 @@
   <div class="lunch-wrap" id="lunchWrap"><div class="lunch-card" id="lunchCard"></div></div>
 </section>
 
+<section class="view page" id="v-weather">
+  <h1>Weather <span>outlook</span></h1>
+  <div class="body">
+    <div class="wx-left">
+      <div class="wx-now" id="wxNow"></div>
+      <div class="wx-hours card" id="wxHours"></div>
+      <div class="wx-days card" id="wxDays"></div>
+    </div>
+    <div class="wx-radar card"><div class="img" id="wxRadar"></div><div class="cap" id="wxRadarCap">Radar · NWS North Webster (KIWX)</div></div>
+  </div>
+</section>
+
+<section class="view page" id="v-sports">
+  <h1>Scores <span>&amp; schedule</span></h1>
+  <div class="body"><div class="sp-grid" id="spGrid"></div></div>
+</section>
+
+<section class="view page" id="v-fantasy">
+  <h1 id="ffTitle">Fantasy</h1>
+  <div class="body">
+    <div class="ff-list" id="ffList"></div>
+    <div class="ff-stand card"><h2>Standings</h2><table id="ffStand"></table></div>
+  </div>
+</section>
+
+<section class="view" id="v-quotes">
+  <div class="blur" id="quoteBlur"></div>
+  <img id="quoteImg" alt="">
+</section>
+
+<section class="view page" id="v-gratitude">
+  <h1>We're grateful <span>for</span></h1>
+  <div class="body"><div class="gr-card card" id="grCard"></div></div>
+</section>
+
 <div class="dots" id="dots"></div>
 <div class="status" id="status"></div>
 
@@ -173,12 +304,12 @@
     return;
   }
 
-  var state = null, events = [], photoList = [], photoListAt = 0;
+  var state = null, events = [];
+  var wxData = null, sportsData = [], fantasyData = null, notes = [];
   var shownCounts = {};           // marble counts last drawn on the jar view
-  var views = ['calendar', 'jars', 'photo', 'lunch'];
+  var views = ['calendar', 'jars', 'photo', 'lunch', 'weather', 'sports', 'fantasy', 'quotes', 'gratitude'];
   var lunch = null;               // {url, name} once the image has actually loaded
   var current = null, idx = -1, timer = null, holding = false;
-  var preloaded = null;           // {id, url}
 
   function $(id) { return document.getElementById(id); }
   function setStatus(msg) { $('status').textContent = msg || ''; }
@@ -206,9 +337,19 @@
       events = r.events; if (current === 'calendar') renderCalendar();
     }).catch(function (e) { setStatus('⚠ calendar: ' + e.message); });
   }
-  function loadPhotoList() {
-    return F.get('photos').then(function (r) { photoList = r.photos; photoListAt = Date.now(); })
-      .catch(function (e) { setStatus('⚠ photos: ' + e.message); });
+  function loadSports() {
+    return F.get('sports').then(function (r) {
+      sportsData = r.teams || []; if (current === 'sports') renderSports();
+    }).catch(function (e) { setStatus('⚠ scores: ' + e.message); });
+  }
+  function loadFantasy() {
+    return F.get('fantasy').then(function (r) {
+      fantasyData = r; if (current === 'fantasy') renderFantasy();
+    }).catch(function (e) { setStatus('⚠ fantasy: ' + e.message); });
+  }
+  function loadNotes() {
+    return F.get('gratitude').then(function (r) { notes = r.notes || []; })
+      .catch(function (e) { setStatus('⚠ gratitude: ' + e.message); });
   }
 
   // The menu image is shown as a plain (non-CORS) image so it always loads. The whitespace
@@ -331,15 +472,150 @@
     if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
     return 'cloud';
   }
+  function icon(code, day) { return '<svg viewBox="0 0 48 48" aria-hidden="true">' + WX_ICONS[wxKind(code, day)] + '</svg>'; }
+  var WX_WORDS = { 0: 'Clear', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Cloudy', 45: 'Fog', 48: 'Freezing fog',
+    51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle', 56: 'Freezing drizzle', 57: 'Freezing drizzle',
+    61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 66: 'Freezing rain', 67: 'Freezing rain',
+    71: 'Light snow', 73: 'Snow', 75: 'Heavy snow', 77: 'Snow grains', 80: 'Showers', 81: 'Showers', 82: 'Heavy showers',
+    85: 'Snow showers', 86: 'Snow showers', 95: 'Thunderstorms', 96: 'Thunderstorms', 99: 'Thunderstorms' };
   function loadWeather() {
     var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + WX_LAT + '&longitude=' + WX_LON +
-      '&current=temperature_2m,weather_code,is_day&temperature_unit=fahrenheit&timezone=auto';
+      '&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m' +
+      '&hourly=temperature_2m,weather_code,precipitation_probability,is_day' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
+      '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=6';
     return fetch(url).then(function (r) { return r.json(); }).then(function (j) {
       var c = j.current;
       if (!c) return;
-      $('wx').innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true">' + WX_ICONS[wxKind(c.weather_code, c.is_day === 1)] + '</svg>' +
-        '<span>' + Math.round(c.temperature_2m) + '°</span>';
+      wxData = j;
+      $('wx').innerHTML = icon(c.weather_code, c.is_day === 1) + '<span>' + Math.round(c.temperature_2m) + '°</span>';
+      if (current === 'weather') renderWeather();
     }).catch(function () { /* keep the last reading; weather is decoration */ });
+  }
+
+  // Open-Meteo returns local wall-clock strings ("2026-10-12T14:00") because of timezone=auto.
+  function localDate(str) { var p = str.split(/[-T:]/); return new Date(+p[0], p[1] - 1, +p[2], +(p[3] || 0), +(p[4] || 0)); }
+
+  function renderWeather() {
+    var j = wxData; if (!j) return;
+    var c = j.current, d = j.daily, h = j.hourly;
+    $('wxNow').innerHTML = icon(c.weather_code, c.is_day === 1) +
+      '<div><div class="big">' + Math.round(c.temperature_2m) + '°</div></div>' +
+      '<div><div class="desc">' + (WX_WORDS[c.weather_code] || '') + '</div>' +
+      '<div class="meta">Feels like ' + Math.round(c.apparent_temperature) + '° · Wind ' + Math.round(c.wind_speed_10m) + ' mph</div>' +
+      '<div class="meta">High ' + Math.round(d.temperature_2m_max[0]) + '° · Low ' + Math.round(d.temperature_2m_min[0]) + '°</div></div>';
+
+    var now = new Date(), start = 0;
+    while (start < h.time.length && localDate(h.time[start]) <= now) start++;
+    var cells = [];
+    for (var i = start; i < Math.min(start + 10, h.time.length); i++) {
+      var t = localDate(h.time[i]);
+      var hr = t.getHours(), lbl = hr === 0 ? '12a' : hr < 12 ? hr + 'a' : hr === 12 ? '12p' : (hr - 12) + 'p';
+      var pp = h.precipitation_probability[i];
+      cells.push('<div><div class="h">' + lbl + '</div>' + icon(h.weather_code[i], h.is_day[i] === 1) +
+        '<div class="t">' + Math.round(h.temperature_2m[i]) + '°</div><div class="p">' + (pp >= 20 ? pp + '%' : '') + '</div></div>');
+    }
+    $('wxHours').innerHTML = cells.join('');
+
+    var lo = Math.min.apply(null, d.temperature_2m_min.slice(0, 5)), hi = Math.max.apply(null, d.temperature_2m_max.slice(0, 5));
+    var span = Math.max(1, hi - lo), rows = [];
+    for (var k = 0; k < Math.min(5, d.time.length); k++) {
+      var day = localDate(d.time[k]);
+      var name = k === 0 ? 'Today' : day.toLocaleDateString([], { weekday: 'short' });
+      var a = (d.temperature_2m_min[k] - lo) / span * 100, b = (d.temperature_2m_max[k] - lo) / span * 100;
+      var p = d.precipitation_probability_max[k];
+      rows.push('<div class="wx-day"><div>' + name + '</div>' + icon(d.weather_code[k], true) +
+        '<div class="p">' + (p >= 20 ? p + '%' : '') + '</div><div class="lo">' + Math.round(d.temperature_2m_min[k]) + '°</div>' +
+        '<div class="bar"><i style="left:' + a.toFixed(1) + '%;right:' + (100 - b).toFixed(1) + '%"></i></div>' +
+        '<div>' + Math.round(d.temperature_2m_max[k]) + '°</div></div>');
+    }
+    $('wxDays').innerHTML = rows.join('');
+    // NWS radar loop (animated GIF); cache-busted every 10 minutes
+    var src = 'https://radar.weather.gov/ridge/standard/KIWX_loop.gif?t=' + Math.floor(Date.now() / 600000);
+    if ($('wxRadar').getAttribute('data-src') !== src) {
+      var im = new Image();
+      im.onload = function () {
+        $('wxRadar').style.backgroundImage = 'url("' + src + '")'; $('wxRadar').setAttribute('data-src', src);
+        $('wxRadarCap').textContent = 'Radar · NWS North Webster (KIWX) · ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      };
+      im.src = src;
+    }
+  }
+
+  /* ---------- sports ---------- */
+  function when(iso, withTime) {
+    var t = new Date(iso), n = new Date();
+    var d0 = new Date(n.getFullYear(), n.getMonth(), n.getDate()), d1 = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    var diff = Math.round((d1 - d0) / 86400000);
+    var day = diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : diff === -1 ? 'Yesterday' :
+      (diff > 1 && diff < 7) || (diff < -1 && diff > -7) ? t.toLocaleDateString([], { weekday: 'short' }) :
+      t.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return withTime ? day + ' ' + t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : day;
+  }
+  function oppHtml(g) {
+    if (!g.opp) return '';
+    return '<span class="sp-opp">' + (g.home || g.neutral ? 'vs' : '@') + (g.opp.logo ? '<img src="' + esc(g.opp.logo) + '" alt="" onerror="this.style.display=\'none\'">' : '') +
+      (g.opp.rank ? '#' + g.opp.rank + ' ' : '') + esc(g.opp.name) + '</span>';
+  }
+  function renderSports() {
+    var g = $('spGrid'), n = sportsData.length;
+    var cols = n <= 1 ? 1 : n <= 4 ? 2 : 3;
+    g.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+    g.className = 'sp-grid' + (n > 6 ? ' compact' : n <= 4 ? ' roomy' : '');
+    g.innerHTML = sportsData.map(function (t) {
+      var rows = [];
+      if (t.live) rows.push('<div class="sp-row"><span class="pill">LIVE</span><span class="res">' + esc(t.live.us) + '–' + esc(t.live.them) + '</span>' +
+        '<span>' + oppHtml(t.live) + '</span><span class="dim">· ' + esc(t.live.detail) + '</span></div>');
+      if (t.last) rows.push('<div class="sp-row"><span class="lbl">Last</span><span class="res ' + t.last.result + '">' + esc(t.last.result) + '</span>' +
+        '<span>' + esc(t.last.us) + '–' + esc(t.last.them) + '</span><span>' + oppHtml(t.last) + '</span><span class="dim">· ' + when(t.last.date) + '</span></div>');
+      if (t.next) rows.push('<div class="sp-row"><span class="lbl">Next</span><span>' + oppHtml(t.next) + '</span><span class="dim">· ' + when(t.next.date, true) +
+        (t.next.tv ? ' · ' + esc(t.next.tv) : '') + '</span></div>');
+      else if (!t.live) rows.push('<div class="sp-row"><span class="lbl">Next</span><span class="dim">' + (t.error ? 'Couldn\'t load' : 'No game scheduled') + '</span></div>');
+      return '<div class="sp-card card" style="border-left:.6vh solid ' + esc(t.color || 'var(--line)') + '"><div class="sp-head">' +
+        (t.logo ? '<img src="' + esc(t.logo) + '" alt="" onerror="this.style.display=\'none\'">' : '') +
+        '<div><div class="nm">' + esc(t.short || t.name) + '</div><div class="rec">' +
+        [t.record, t.standing || t.leagueName].filter(Boolean).map(esc).join(' · ') + '</div></div></div>' + rows.join('') + '</div>';
+    }).join('');
+  }
+
+  /* ---------- fantasy ---------- */
+  function renderFantasy() {
+    var f = fantasyData; if (!f || !f.league) return;
+    $('ffTitle').innerHTML = esc(f.league) + ' <span>· Week ' + esc(f.week) + '</span>';
+    var list = $('ffList');
+    list.className = 'ff-list' + (f.matchups.length > 3 ? ' two' : '');
+    function side(x, other, done) {
+      if (!x) return '<div class="ff-side"><div class="who"><div class="tn">BYE</div></div></div>';
+      var lead = other && x.points > other.points;
+      var t = x.team || {};
+      var rec = t.wins + '-' + t.losses + (t.ties ? '-' + t.ties : '');
+      return '<div class="ff-side' + (lead ? ' lead' : '') + '">' +
+        (t.logo ? '<img src="' + esc(t.logo) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '<img alt="">') +
+        '<div class="who"><div class="tn">' + esc(t.name) + '</div><div class="ow">' + esc(t.owner) + ' · ' + rec + '</div></div>' +
+        '<div class="pts"><b>' + x.points.toFixed(1) + '</b>' + (!done && x.projected != null ? '<small>proj ' + x.projected.toFixed(1) + '</small>' : '') + '</div></div>';
+    }
+    list.innerHTML = f.matchups.map(function (m) {
+      var done = m.winner && m.winner !== 'UNDECIDED';
+      return '<div class="ff-match card">' + side(m.home, m.away, done) + side(m.away, m.home, done) + '</div>';
+    }).join('');
+    $('ffStand').innerHTML = f.standings.map(function (t, i) {
+      return '<tr><td class="n">' + (i + 1) + '</td><td class="t">' + esc(t.name) + '</td><td class="r">' + t.wins + '-' + t.losses +
+        (t.ties ? '-' + t.ties : '') + '</td><td class="r dim" style="color:var(--muted)">' + Math.round(t.pf) + '</td></tr>';
+    }).join('');
+  }
+
+  /* ---------- gratitude ---------- */
+  var GKEY = 'famdash.lastNote';
+  function showNote() {
+    if (!notes.length) return false;
+    var last = null; try { last = localStorage.getItem(GKEY); } catch (e) {}
+    var i = -1; notes.forEach(function (n, j) { if (n.id === last) i = j; });
+    var n = notes[(i + 1) % notes.length];
+    try { localStorage.setItem(GKEY, n.id); } catch (e) {}
+    var len = n.text.length, size = len < 60 ? 7 : len < 120 ? 5.6 : len < 220 ? 4.4 : 3.6;
+    $('grCard').innerHTML = '<div class="mark">“</div><div class="txt" style="font-size:' + size + 'vh">' + esc(n.text) + '</div>' +
+      '<div class="by">' + (n.who ? '— <b>' + esc(n.who) + '</b> · ' : '') + new Date(n.created).toLocaleDateString([], { month: 'short', day: 'numeric' }) + '</div>';
+    return true;
   }
 
   /* ---------- calendar ---------- */
@@ -451,36 +727,53 @@
     });
   }
 
-  /* ---------- photos ---------- */
-  var PKEY = 'famdash.lastPhoto';
-  function nextPhotoId() {
-    if (!photoList.length) return null;
-    var last = null; try { last = localStorage.getItem(PKEY); } catch (e) {}
+  /* ---------- photo & quote albums (Drive folders; one image per visit, in order, wrapping) ---------- */
+  function Album(kind, imgId, blurId, key) {
+    this.kind = kind; this.imgId = imgId; this.blurId = blurId; this.key = key;
+    this.list = []; this.listAt = 0; this.pre = null;
+  }
+  Album.prototype.loadList = function () {
+    var a = this;
+    return F.get('photos', { kind: a.kind }).then(function (r) { a.list = r.photos; a.listAt = Date.now(); })
+      .catch(function (e) { setStatus('⚠ ' + a.kind + ': ' + e.message); });
+  };
+  Album.prototype.nextId = function () {
+    if (!this.list.length) return null;
+    var last = null; try { last = localStorage.getItem(this.key); } catch (e) {}
     var i = -1;
-    photoList.forEach(function (p, j) { if (p.id === last) i = j; });
-    return photoList[(i + 1) % photoList.length].id;
-  }
-  function preload() {
-    var id = nextPhotoId();
-    if (!id) { preloaded = null; return Promise.resolve(); }
-    if (preloaded && preloaded.id === id) return Promise.resolve();
+    this.list.forEach(function (p, j) { if (p.id === last) i = j; });
+    return this.list[(i + 1) % this.list.length].id;
+  };
+  Album.prototype.preload = function () {
+    var a = this, id = a.nextId();
+    if (!id) { a.pre = null; return Promise.resolve(); }
+    if (a.pre && a.pre.id === id) return Promise.resolve();
     return F.get('photo', { id: id }).then(function (r) {
-      preloaded = { id: id, url: 'data:' + r.mime + ';base64,' + r.data };
-    }).catch(function (e) { setStatus('⚠ photo: ' + e.message); preloaded = null; });
-  }
-  function showPhoto() {
-    var p = preloaded;
+      a.pre = { id: id, url: 'data:' + r.mime + ';base64,' + r.data };
+    }).catch(function (e) { setStatus('⚠ ' + a.kind + ': ' + e.message); a.pre = null; });
+  };
+  Album.prototype.ensure = function () {
+    var a = this;
+    if (a.pre) return Promise.resolve();
+    return (a.list.length ? a.preload() : a.loadList().then(function () { return a.preload(); }));
+  };
+  Album.prototype.show = function () {
+    var a = this, p = a.pre;
     if (!p) return false;
-    $('photoImg').src = p.url;
-    $('photoBlur').style.backgroundImage = 'url("' + p.url + '")';
-    try { localStorage.setItem(PKEY, p.id); } catch (e) {}
-    preloaded = null;
+    $(a.imgId).src = p.url;
+    $(a.blurId).style.backgroundImage = 'url("' + p.url + '")';
+    try { localStorage.setItem(a.key, p.id); } catch (e) {}
+    a.pre = null;
     // fetch the next one in the background, refreshing the folder list now and then
     setTimeout(function () {
-      (Date.now() - photoListAt > 15 * 60000 ? loadPhotoList() : Promise.resolve()).then(preload);
+      (Date.now() - a.listAt > 15 * 60000 ? a.loadList() : Promise.resolve()).then(function () { return a.preload(); });
     }, 3000);
     return true;
-  }
+  };
+  var albums = {
+    photo: new Album('photos', 'photoImg', 'photoBlur', 'famdash.lastPhoto'),
+    quotes: new Album('quotes', 'quoteImg', 'quoteBlur', 'famdash.lastQuote')
+  };
 
   /* ---------- view cycling ---------- */
   function drawDots() {
@@ -489,16 +782,25 @@
   }
 
   function show(view) {
-    if (view === 'photo' && !showPhoto()) return false;
+    if ((view === 'photo' || view === 'quotes') && !albums[view].show()) return false;
     if (view === 'lunch' && !lunch) return false;
+    if (view === 'weather' && !wxData) return false;
+    if (view === 'sports' && !sportsData.length) return false;
+    if (view === 'fantasy' && !(fantasyData && fantasyData.league && fantasyData.matchups && fantasyData.matchups.length)) return false;
+    if (view === 'gratitude' && !showNote()) return false;
     if (view === 'calendar') renderCalendar();
     if (view === 'jars') renderJars();
     var sections = document.querySelectorAll('.view');
     for (var i = 0; i < sections.length; i++) sections[i].classList.toggle('on', sections[i].id === 'v-' + view);
     document.body.classList.toggle('photo-on', view === 'photo');
     document.body.classList.toggle('lunch-on', view === 'lunch');
+    document.body.classList.toggle('quotes-on', view === 'quotes');
     if (view === 'lunch') fitLunch();
     current = view;
+    // render after the section is visible so layout-dependent views measure correctly
+    if (view === 'weather') renderWeather();
+    if (view === 'sports') renderSports();
+    if (view === 'fantasy') renderFantasy();
     drawDots();
     return true;
   }
@@ -522,9 +824,9 @@
     if (i >= 0) idx = i;
     holding = true;
     var go = function () { show(view); schedule(holdSecs * 1000); };
-    if (view === 'photo' && !preloaded) {
-      (photoList.length ? preload() : loadPhotoList().then(preload)).then(go);
-    } else go();
+    if (albums[view]) albums[view].ensure().then(go);
+    else if (view === 'gratitude' && !notes.length) loadNotes().then(go);
+    else go();
   }
 
   /* ---------- relay ---------- */
@@ -532,8 +834,16 @@
     var hold = (state && state.settings.holdSeconds) || 30;
     if (msg.type === 'show') jump(msg.view, msg.hold || hold);
     else if (msg.type === 'jar') loadState().then(function () { jump('jars', Math.min(hold, 20)); });
-    else if (msg.type === 'refresh') { loadState(); loadEvents(); }
-    else if (msg.type === 'photos') loadPhotoList().then(function () { preloaded = null; return preload(); });
+    else if (msg.type === 'refresh') { loadState(); loadEvents(); loadSports(); loadFantasy(); }
+    else if (msg.type === 'photos') {
+      var kinds = msg.kind ? [msg.kind === 'quotes' ? 'quotes' : 'photo'] : ['photo', 'quotes'];
+      kinds.forEach(function (k) { var a = albums[k]; a.loadList().then(function () { a.pre = null; return a.preload(); }); });
+    }
+    else if (msg.type === 'gratitude') loadNotes().then(function () {
+      // a note was just added: show it now (list is newest-first, so point "last shown" at the end)
+      if (notes.length) try { localStorage.setItem(GKEY, notes[notes.length - 1].id); } catch (e) {}
+      jump('gratitude', hold);
+    });
     else if (msg.type === 'reload') location.reload();
   }
 
@@ -552,19 +862,22 @@
   })();
 
   /* ---------- boot ---------- */
-  Promise.all([loadState(), loadEvents(), loadPhotoList(), loadLunch()]).then(function () {
+  Promise.all([loadState(), loadEvents(), albums.photo.loadList(), albums.quotes.loadList(), loadLunch(),
+    loadWeather(), loadSports(), loadFantasy(), loadNotes()]).then(function () {
     if (state) {
       state.kids.forEach(function (k) { shownCounts[k.id] = k.count; });
       F.listen(state.ntfyTopic, onMessage);
     }
-    preload();
+    albums.photo.preload(); albums.quotes.preload();
     next();
   });
   setInterval(loadState, 5 * 60000);
   setInterval(loadEvents, 10 * 60000);
   setInterval(loadLunch, 3 * 3600000);
-  loadWeather();
   setInterval(loadWeather, 20 * 60000);
+  setInterval(loadSports, 3 * 60000);
+  setInterval(loadFantasy, 3 * 60000);
+  setInterval(loadNotes, 10 * 60000);
 })();
 </script>
 </body>
