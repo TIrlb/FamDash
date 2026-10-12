@@ -144,7 +144,11 @@
   .sp-head img { width: 6.4vh; height: 6.4vh; object-fit: contain; flex: none; }
   .sp-head .nm { font-family: 'Fredoka', sans-serif; font-size: 3.4vh; line-height: 1.1; }
   .sp-head .rec { font-size: 2vh; color: var(--muted); font-weight: 700; }
-  .sp-row { display: flex; align-items: center; gap: .8vw; font-size: 2.5vh; font-weight: 700; white-space: nowrap; overflow: hidden; }
+  .sp-row { display: flex; align-items: flex-start; gap: .8vw; font-size: 2.5vh; font-weight: 700; }
+  .sp-row .lbl, .sp-row .pill { margin-top: .5vh; }
+  .sp-main { min-width: 0; flex: 1; }
+  .sp-main .l1 { display: flex; align-items: center; gap: .8vw; white-space: nowrap; overflow: hidden; }
+  .sp-main .dim { display: block; font-size: .82em; margin-top: .2vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sp-row .lbl { width: 4.2vw; flex: none; font-size: 1.8vh; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
   .sp-row img { width: 3.4vh; height: 3.4vh; object-fit: contain; flex: none; }
   .sp-row .res { font-family: 'Fredoka', sans-serif; font-weight: 600; min-width: 1.6em; }
@@ -170,7 +174,10 @@
   .ff-match { padding: 1.4vh 1.4vw; }
   .ff-side { display: flex; align-items: center; gap: 1vw; padding: .9vh 0; }
   .ff-side + .ff-side { border-top: 1px solid var(--line); }
-  .ff-side img { width: 5.4vh; height: 5.4vh; border-radius: 50%; background: rgba(255,255,255,.08); flex: none; object-fit: cover; }
+  .ff-logo { width: 5.4vh; height: 5.4vh; border-radius: 50%; background: rgba(255,255,255,.08); flex: none; position: relative; overflow: hidden; }
+  .ff-logo::before { content: attr(data-i); position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center;
+    font: 600 1.9vh 'Fredoka', sans-serif; color: var(--muted); }
+  .ff-logo img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; background: #1e2330; }
   .ff-side .who { flex: 1; min-width: 0; }
   .ff-side .tn { font-family: 'Fredoka', sans-serif; font-size: 3vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ff-side .ow { font-size: 1.9vh; color: var(--muted); font-weight: 700; }
@@ -286,6 +293,7 @@
   </form>
 </div>
 
+<script src="js/espn.js"></script>
 <script src="js/api.js"></script>
 <script src="js/jar.js"></script>
 <script>
@@ -338,12 +346,14 @@
     }).catch(function (e) { setStatus('⚠ calendar: ' + e.message); });
   }
   function loadSports() {
-    return F.get('sports').then(function (r) {
+    if (!state) return Promise.resolve();
+    return F.sports(state.settings.sportsTeams || []).then(function (r) {
       sportsData = r.teams || []; if (current === 'sports') renderSports();
     }).catch(function (e) { setStatus('⚠ scores: ' + e.message); });
   }
   function loadFantasy() {
-    return F.get('fantasy').then(function (r) {
+    if (!state) return Promise.resolve();
+    return F.fantasy(state.settings.fantasyLeagueId).then(function (r) {
       fantasyData = r; if (current === 'fantasy') renderFantasy();
     }).catch(function (e) { setStatus('⚠ fantasy: ' + e.message); });
   }
@@ -564,13 +574,14 @@
     g.className = 'sp-grid' + (n > 6 ? ' compact' : n <= 4 ? ' roomy' : '');
     g.innerHTML = sportsData.map(function (t) {
       var rows = [];
-      if (t.live) rows.push('<div class="sp-row"><span class="pill">LIVE</span><span class="res">' + esc(t.live.us) + '–' + esc(t.live.them) + '</span>' +
-        '<span>' + oppHtml(t.live) + '</span><span class="dim">· ' + esc(t.live.detail) + '</span></div>');
-      if (t.last) rows.push('<div class="sp-row"><span class="lbl">Last</span><span class="res ' + t.last.result + '">' + esc(t.last.result) + '</span>' +
-        '<span>' + esc(t.last.us) + '–' + esc(t.last.them) + '</span><span>' + oppHtml(t.last) + '</span><span class="dim">· ' + when(t.last.date) + '</span></div>');
-      if (t.next) rows.push('<div class="sp-row"><span class="lbl">Next</span><span>' + oppHtml(t.next) + '</span><span class="dim">· ' + when(t.next.date, true) +
-        (t.next.tv ? ' · ' + esc(t.next.tv) : '') + '</span></div>');
-      else if (!t.live) rows.push('<div class="sp-row"><span class="lbl">Next</span><span class="dim">' + (t.error ? 'Couldn\'t load' : 'No game scheduled') + '</span></div>');
+      function row(lbl, l1, sub) {
+        return '<div class="sp-row">' + lbl + '<div class="sp-main"><div class="l1">' + l1 + '</div>' + (sub ? '<span class="dim">' + sub + '</span>' : '') + '</div></div>';
+      }
+      if (t.live) rows.push(row('<span class="pill">LIVE</span>', '<span class="res">' + esc(t.live.us) + '–' + esc(t.live.them) + '</span>' + oppHtml(t.live), esc(t.live.detail)));
+      if (t.last) rows.push(row('<span class="lbl">Last</span>', '<span class="res ' + t.last.result + '">' + esc(t.last.result) + '</span>' +
+        '<span>' + esc(t.last.us) + '–' + esc(t.last.them) + '</span>' + oppHtml(t.last), when(t.last.date)));
+      if (t.next) rows.push(row('<span class="lbl">Next</span>', oppHtml(t.next), when(t.next.date, true) + (t.next.tv ? ' · ' + esc(t.next.tv) : '')));
+      else if (!t.live) rows.push(row('<span class="lbl">Next</span>', '<span class="dim" style="font-size:1em;margin:0">' + (t.error ? 'Couldn\'t load' : 'No game scheduled') + '</span>', ''));
       return '<div class="sp-card card" style="border-left:.6vh solid ' + esc(t.color || 'var(--line)') + '"><div class="sp-head">' +
         (t.logo ? '<img src="' + esc(t.logo) + '" alt="" onerror="this.style.display=\'none\'">' : '') +
         '<div><div class="nm">' + esc(t.short || t.name) + '</div><div class="rec">' +
@@ -590,7 +601,8 @@
       var t = x.team || {};
       var rec = t.wins + '-' + t.losses + (t.ties ? '-' + t.ties : '');
       return '<div class="ff-side' + (lead ? ' lead' : '') + '">' +
-        (t.logo ? '<img src="' + esc(t.logo) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '<img alt="">') +
+        '<span class="ff-logo" data-i="' + esc((t.abbrev || t.name || '?').slice(0, 3)) + '">' +
+        (t.logo ? '<img src="' + esc(t.logo) + '" alt="" onerror="this.remove()">' : '') + '</span>' +
         '<div class="who"><div class="tn">' + esc(t.name) + '</div><div class="ow">' + esc(t.owner) + ' · ' + rec + '</div></div>' +
         '<div class="pts"><b>' + x.points.toFixed(1) + '</b>' + (!done && x.projected != null ? '<small>proj ' + x.projected.toFixed(1) + '</small>' : '') + '</div></div>';
     }
@@ -834,7 +846,7 @@
     var hold = (state && state.settings.holdSeconds) || 30;
     if (msg.type === 'show') jump(msg.view, msg.hold || hold);
     else if (msg.type === 'jar') loadState().then(function () { jump('jars', Math.min(hold, 20)); });
-    else if (msg.type === 'refresh') { loadState(); loadEvents(); loadSports(); loadFantasy(); }
+    else if (msg.type === 'refresh') { loadEvents(); loadState().then(function () { loadSports(); loadFantasy(); }); }
     else if (msg.type === 'photos') {
       var kinds = msg.kind ? [msg.kind === 'quotes' ? 'quotes' : 'photo'] : ['photo', 'quotes'];
       kinds.forEach(function (k) { var a = albums[k]; a.loadList().then(function () { a.pre = null; return a.preload(); }); });
@@ -862,8 +874,8 @@
   })();
 
   /* ---------- boot ---------- */
-  Promise.all([loadState(), loadEvents(), albums.photo.loadList(), albums.quotes.loadList(), loadLunch(),
-    loadWeather(), loadSports(), loadFantasy(), loadNotes()]).then(function () {
+  Promise.all([loadState().then(function () { return Promise.all([loadSports(), loadFantasy()]); }),
+    loadEvents(), albums.photo.loadList(), albums.quotes.loadList(), loadLunch(), loadWeather(), loadNotes()]).then(function () {
     if (state) {
       state.kids.forEach(function (k) { shownCounts[k.id] = k.count; });
       F.listen(state.ntfyTopic, onMessage);

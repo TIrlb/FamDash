@@ -280,8 +280,26 @@
     return api;
   })();
 
+  // ESPN data comes straight from the browser (see js/espn.js); demo mode serves canned data.
+  function demoOr(action, params, live) {
+    if (config && config.api === 'demo') return Demo.get(action, params || {});
+    return live();
+  }
+  function sports(list) {
+    return demoOr('sports', {}, function () { return global.ESPN.sports(list).then(function (t) { return { ok: true, teams: t }; }); });
+  }
+  function fantasy(leagueId) {
+    return demoOr('fantasy', {}, function () { return global.ESPN.fantasy(leagueId).then(function (f) { return Object.assign({ ok: true }, f); }); });
+  }
+  function teams(league) {
+    return demoOr('teams', { league: league }, function () { return global.ESPN.teams(league).then(function (t) { return { ok: true, teams: t }; }); });
+  }
+
   global.FamDash = {
     get config() { return config; },
+    sports: sports,
+    fantasy: fantasy,
+    teams: teams,
     saveConfig: saveConfig,
     get: get,
     post: post,

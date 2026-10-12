@@ -5,7 +5,7 @@
  * Run setup() once from the editor first; it creates the token, ntfy topic,
  * photo folder and default state, and logs what you need.
  *
- * GET  ?action=state|events|calendars|photos|photo|lunch|gratitude|sports|teams|fantasy&token=...
+ * GET  ?action=state|events|calendars|photos|photo|lunch|gratitude&token=...
  * POST {token, action: adjust|setKid|setSettings|setCalendars|upload|deletePhoto|addGratitude|deleteGratitude, ...}
  *      (sent as text/plain so the browser skips the CORS preflight)
  */
@@ -118,9 +118,6 @@ function doGet(e) {
       case 'calendars': return json_({ ok: true, calendars: calendars_() });
       case 'photos': return json_({ ok: true, photos: photos_(p.kind) });
       case 'gratitude': return json_({ ok: true, notes: gratitude_() });
-      case 'sports': return json_({ ok: true, teams: sports_() });
-      case 'teams': return json_({ ok: true, teams: teamsList_(p.league) });
-      case 'fantasy': return json_(Object.assign({ ok: true }, fantasy_()));
       case 'lunch': return json_(Object.assign({ ok: true }, lunch_(p.fresh === '1')));
       case 'photo': return json_(Object.assign({ ok: true }, photo_(p.id)));
       default: return json_({ ok: false, error: 'unknown action' });
@@ -276,7 +273,6 @@ function setSettings_(n) {
   }
   if (typeof n.fantasyLeagueId === 'string' && /^\d*$/.test(n.fantasyLeagueId.trim())) {
     st.fantasyLeagueId = n.fantasyLeagueId.trim();
-    CacheService.getScriptCache().remove('fantasy');
   }
   if (n.jarMode === 'separate' || n.jarMode === 'combined') st.jarMode = n.jarMode;
   if (n.jarGoal != null) st.jarGoal = Math.max(5, Math.min(400, Math.round(Number(n.jarGoal)) || st.jarGoal));
@@ -444,7 +440,10 @@ function deleteGratitude_(id) {
   return gratitude_();
 }
 
-/* ---------- sports (ESPN's public site API; unofficial, no key) ---------- */
+/* ---------- sports & fantasy settings ----------
+ * ESPN blocks requests from Apps Script (it rejects the "Google-Apps-Script" user agent, which
+ * UrlFetchApp always sends), so the display fetches ESPN data directly in the browser (js/espn.js).
+ * The backend only stores which teams to follow and the fantasy league ID. */
 
 const LEAGUES = {
   'football/nfl': 'NFL',
@@ -455,165 +454,3 @@ const LEAGUES = {
   'basketball/wnba': 'WNBA',
   'baseball/mlb': 'MLB'
 };
-const ESPN_SITE = 'https://site.api.espn.com/apis/site/v2/sports/';
-
-function fetchJson_(url) {
-  const r = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  if (r.getResponseCode() !== 200) throw new Error('ESPN ' + r.getResponseCode());
-  return JSON.parse(r.getContentText());
-}
-
-// Team picker list for one league; cached a day.
-function teamsList_(league) {
-  if (!LEAGUES[league]) throw new Error('unknown league');
-  const cache = CacheService.getScriptCache();
-  const key = 'teams:' + league;
-  const hit = cache.get(key);
-  if (hit) return JSON.parse(hit);
-  const j = fetchJson_(ESPN_SITE + league + '/teams?limit=1000');
-  const list = j.sports[0].leagues[0].teams.map(function (x) {
-    return { id: x.team.id, name: x.team.displayName, abbr: x.team.abbreviation };
-  }).sort(function (a, b) { return a.name.localeCompare(b.name); });
-  try { cache.put(key, JSON.stringify(list), 21600); } catch (e) { /* too big to cache: fine */ }
-  return list;
-}
-
-function sports_() {
-  const teams = getState_().settings.sportsTeams || [];
-  const cache = CacheService.getScriptCache();
-  return teams.map(function (t) {
-    const key = 'sp:' + t.league + ':' + t.id;
-    const hit = cache.get(key);
-    if (hit) return JSON.parse(hit);
-    let out;
-    try { out = teamSummary_(t); } catch (e) { out = { league: t.league, id: t.id, name: t.name, error: String(e.message || e) }; }
-    // refresh fast while a game is on or about to start
-    const soon = out.next && (new Date(out.next.date) - Date.now()) < 3 * 3600000;
-    cache.put(key, JSON.stringify(out), out.live || soon ? 120 : 900);
-    return out;
-  });
-}
-
-function teamSummary_(t) {
-  const base = ESPN_SITE + t.league + '/teams/' + t.id;
-  const res = UrlFetchApp.fetchAll([base, base + '/schedule'].map(function (u) { return { url: u, muteHttpExceptions: true }; }));
-  if (res[0].getResponseCode() !== 200) throw new Error('team not found');
-  const team = JSON.parse(res[0].getContentText()).team;
-  let events = res[1].getResponseCode() === 200 ? (JSON.parse(res[1].getContentText()).events || []) : [];
-  const season = (JSON.parse(res[1].getContentText() || '{}').season || {}).year;
-
-  // Off-season / postseason-only schedules: also look at the regular season, then last season.
-  if (!events.some(isDone_)) {
-    const more = [base + '/schedule?seasontype=2'];
-    if (season) {
-      more.push(base + '/schedule?season=' + (season - 1) + '&seasontype=2');
-      more.push(base + '/schedule?season=' + (season - 1) + '&seasontype=3');   // last postseason
-    }
-    UrlFetchApp.fetchAll(more.map(function (u) { return { url: u, muteHttpExceptions: true }; })).forEach(function (r) {
-      if (r.getResponseCode() === 200) events = events.concat(JSON.parse(r.getContentText()).events || []);
-    });
-  }
-  (team.nextEvent || []).forEach(function (e) { events.push(e); });
-
-  const seen = {};
-  events = events.filter(function (e) { if (seen[e.id]) return false; seen[e.id] = true; return true; })
-    .sort(function (a, b) { return a.date < b.date ? -1 : 1; });
-  const done = events.filter(isDone_);
-  const live = events.filter(function (e) { return stateOf_(e) === 'in'; })[0];
-  const next = events.filter(function (e) { return stateOf_(e) === 'pre' && new Date(e.date) > Date.now() - 6 * 3600000; })[0];
-  const rec = ((team.record || {}).items || [])[0];
-  return {
-    league: t.league,
-    leagueName: LEAGUES[t.league],
-    id: t.id,
-    name: team.displayName,
-    short: team.shortDisplayName || team.displayName,
-    logo: logoOf_(team),
-    color: team.color ? '#' + team.color : '',
-    record: rec ? rec.summary : '',
-    standing: team.standingSummary || '',
-    last: done.length ? gameInfo_(done[done.length - 1], t.id) : null,
-    live: live ? gameInfo_(live, t.id) : null,
-    next: next ? gameInfo_(next, t.id) : null
-  };
-}
-
-function stateOf_(e) { return (((e.competitions || [])[0] || {}).status || {}).type ? e.competitions[0].status.type.state : ''; }
-function isDone_(e) { const c = (e.competitions || [])[0]; return !!(c && c.status && c.status.type && c.status.type.completed); }
-function logoOf_(team) { return (team.logos && team.logos[0] && team.logos[0].href) || team.logo || ''; }
-function scoreOf_(s) { return s == null ? null : typeof s === 'object' ? (s.displayValue != null ? s.displayValue : s.value) : String(s); }
-
-function gameInfo_(e, teamId) {
-  const c = e.competitions[0];
-  const comps = c.competitors || [];
-  const me = comps.filter(function (x) { return String(x.team && x.team.id) === String(teamId); })[0] || comps[0];
-  const op = comps.filter(function (x) { return x !== me; })[0] || {};
-  const tvs = (c.broadcasts || []).map(function (b) { return (b.media && b.media.shortName) || (b.names && b.names[0]) || ''; }).filter(String);
-  const rank = function (x) { const r = x && x.curatedRank && x.curatedRank.current; return r && r <= 25 ? r : null; };
-  return {
-    date: e.date,
-    state: c.status.type.state,
-    detail: c.status.type.shortDetail,
-    home: me.homeAway === 'home',
-    neutral: !!c.neutralSite,
-    opp: op.team ? { name: op.team.shortDisplayName || op.team.displayName, abbr: op.team.abbreviation, logo: logoOf_(op.team), rank: rank(op) } : null,
-    us: scoreOf_(me.score),
-    them: scoreOf_(op.score),
-    result: me.winner === true ? 'W' : op.winner === true ? 'L' : (c.status.type.completed ? 'T' : ''),
-    tv: tvs[0] || '',
-    venue: (c.venue && c.venue.fullName) || ''
-  };
-}
-
-/* ---------- ESPN fantasy football (public league; unofficial API) ---------- */
-
-function fantasy_() {
-  const st = getState_().settings;
-  if (!st.fantasyLeagueId) return { league: null };
-  const cache = CacheService.getScriptCache();
-  const hit = cache.get('fantasy');
-  if (hit) return JSON.parse(hit);
-  const now = new Date();
-  const season = now.getMonth() < 2 ? now.getFullYear() - 1 : now.getFullYear(); // NFL season runs into Jan/Feb
-  const url = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/' + season +
-    '/segments/0/leagues/' + st.fantasyLeagueId + '?view=mTeam&view=mMatchupScore&view=mScoreboard&view=mSettings';
-  const r = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  if (r.getResponseCode() === 401) throw new Error('fantasy league is private — set it to public in ESPN league settings');
-  if (r.getResponseCode() !== 200) throw new Error('ESPN fantasy ' + r.getResponseCode());
-  const j = JSON.parse(r.getContentText());
-  const members = {};
-  (j.members || []).forEach(function (m) { members[m.id] = m.firstName || m.displayName || ''; });
-  const teams = {};
-  (j.teams || []).forEach(function (t) {
-    const o = (t.record || {}).overall || {};
-    teams[t.id] = {
-      id: t.id,
-      name: t.name || ((t.location || '') + ' ' + (t.nickname || '')).trim(),
-      abbrev: t.abbrev,
-      logo: t.logo || '',
-      owner: members[t.primaryOwner] || '',
-      wins: o.wins || 0, losses: o.losses || 0, ties: o.ties || 0,
-      pf: Math.round((o.pointsFor || 0) * 10) / 10,
-      seed: t.playoffSeed || 99
-    };
-  });
-  const week = (j.status || {}).currentMatchupPeriod || j.scoringPeriodId;
-  const side = function (x) {
-    if (!x) return null;
-    const pts = x.totalPointsLive != null ? x.totalPointsLive : x.totalPoints;
-    return {
-      team: teams[x.teamId],
-      points: Math.round((pts || 0) * 100) / 100,
-      projected: x.totalProjectedPointsLive != null ? Math.round(x.totalProjectedPointsLive * 10) / 10 : null,
-      winProb: x.winProbability != null ? x.winProbability : null
-    };
-  };
-  const matchups = (j.schedule || []).filter(function (m) { return m.matchupPeriodId === week; }).map(function (m) {
-    return { home: side(m.home), away: side(m.away), winner: m.winner };
-  });
-  const standings = Object.keys(teams).map(function (k) { return teams[k]; })
-    .sort(function (a, b) { return a.seed - b.seed || b.wins - a.wins || b.pf - a.pf; });
-  const out = { league: (j.settings || {}).name || 'Fantasy', season: season, week: week, matchups: matchups, standings: standings };
-  cache.put('fantasy', JSON.stringify(out), 120);
-  return out;
-}

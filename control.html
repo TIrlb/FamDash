@@ -209,6 +209,7 @@
   </details>
 </main>
 
+<script src="js/espn.js"></script>
 <script src="js/api.js"></script>
 <script>
 (function () {
@@ -394,7 +395,7 @@
     $('tmFilter').value = '';
     if (teamCache[lg]) { fillTeams(); return; }
     $('tmTeam').innerHTML = '<option>Loading…</option>';
-    F.get('teams', { league: lg }).then(function (r) { teamCache[lg] = r.teams; fillTeams(); })
+    F.teams(lg).then(function (r) { teamCache[lg] = r.teams; fillTeams(); })
       .catch(function (e) { $('tmTeam').innerHTML = '<option>' + esc(e.message) + '</option>'; });
   });
   $('tmFilter').addEventListener('input', fillTeams);
