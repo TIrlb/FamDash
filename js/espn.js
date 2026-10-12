@@ -44,6 +44,7 @@
     function rank(x) { var r = x && x.curatedRank && x.curatedRank.current; return r && r <= 25 ? r : null; }
     return {
       date: e.date,
+      tbd: c.timeValid === false || e.timeValid === false,   // kickoff not announced yet
       state: c.status.type.state,
       detail: c.status.type.shortDetail,
       home: me.homeAway === 'home',
@@ -57,10 +58,13 @@
   }
 
   // Last result, live game and next game for one followed team {league, id, name}.
+  // The schedule endpoint carries the team's name, logo, color and record and reliably allows CORS;
+  // the team endpoint (standing, nextEvent) sometimes comes back without the CORS header, so it's optional.
   function summary(t) {
     var base = SITE + t.league + '/teams/' + t.id;
-    return Promise.all([getJson(base), getJsonOrNull(base + '/schedule')]).then(function (r) {
-      var team = r[0].team, sched = r[1] || {};
+    return Promise.all([getJson(base + '/schedule'), getJsonOrNull(base)]).then(function (r) {
+      var sched = r[0] || {};
+      var team = Object.assign({}, sched.team || {}, (r[1] && r[1].team) || {});
       var events = sched.events || [];
       var season = (sched.season || {}).year;
       var extra = Promise.resolve([]);
@@ -80,12 +84,14 @@
         var live = events.filter(function (e) { return stateOf(e) === 'in'; })[0];
         var next = events.filter(function (e) { return stateOf(e) === 'pre' && new Date(e.date) > Date.now() - 6 * 3600000; })[0];
         var rec = ((team.record || {}).items || [])[0];
+        var college = t.league.indexOf('college') >= 0;
+        var short = team.shortDisplayName || (college ? team.location : team.name) || team.displayName || t.name;
         return {
           league: t.league, leagueName: LEAGUES[t.league], id: t.id,
-          name: team.displayName,
-          short: (team.shortDisplayName || team.displayName) + (t.league.indexOf('womens-') >= 0 ? ' (W)' : ''),
+          name: team.displayName || t.name,
+          short: short + (t.league.indexOf('womens-') >= 0 ? ' (W)' : ''),
           logo: logoOf(team), color: team.color ? '#' + team.color : '',
-          record: rec ? rec.summary : '', standing: team.standingSummary || '',
+          record: rec ? rec.summary : (team.recordSummary || ''), standing: team.standingSummary || '',
           last: done.length ? gameInfo(done[done.length - 1], t.id) : null,
           live: live ? gameInfo(live, t.id) : null,
           next: next ? gameInfo(next, t.id) : null

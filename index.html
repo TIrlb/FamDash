@@ -348,7 +348,11 @@
   function loadSports() {
     if (!state) return Promise.resolve();
     return F.sports(state.settings.sportsTeams || []).then(function (r) {
-      sportsData = r.teams || []; if (current === 'sports') renderSports();
+      // If ESPN hiccups for a team, keep showing its last good card instead of "Couldn't load".
+      var prev = {};
+      sportsData.forEach(function (t) { if (!t.error) prev[t.league + ':' + t.id] = t; });
+      sportsData = (r.teams || []).map(function (t) { return t.error && prev[t.league + ':' + t.id] ? prev[t.league + ':' + t.id] : t; });
+      if (current === 'sports') renderSports();
     }).catch(function (e) { setStatus('⚠ scores: ' + e.message); });
   }
   function loadFantasy() {
@@ -580,7 +584,7 @@
       if (t.live) rows.push(row('<span class="pill">LIVE</span>', '<span class="res">' + esc(t.live.us) + '–' + esc(t.live.them) + '</span>' + oppHtml(t.live), esc(t.live.detail)));
       if (t.last) rows.push(row('<span class="lbl">Last</span>', '<span class="res ' + t.last.result + '">' + esc(t.last.result) + '</span>' +
         '<span>' + esc(t.last.us) + '–' + esc(t.last.them) + '</span>' + oppHtml(t.last), when(t.last.date)));
-      if (t.next) rows.push(row('<span class="lbl">Next</span>', oppHtml(t.next), when(t.next.date, true) + (t.next.tv ? ' · ' + esc(t.next.tv) : '')));
+      if (t.next) rows.push(row('<span class="lbl">Next</span>', oppHtml(t.next), when(t.next.date, !t.next.tbd) + (t.next.tbd ? ' · time TBD' : '') + (t.next.tv ? ' · ' + esc(t.next.tv) : '')));
       else if (!t.live) rows.push(row('<span class="lbl">Next</span>', '<span class="dim" style="font-size:1em;margin:0">' + (t.error ? 'Couldn\'t load' : 'No game scheduled') + '</span>', ''));
       return '<div class="sp-card card" style="border-left:.6vh solid ' + esc(t.color || 'var(--line)') + '"><div class="sp-head">' +
         (t.logo ? '<img src="' + esc(t.logo) + '" alt="" onerror="this.style.display=\'none\'">' : '') +
