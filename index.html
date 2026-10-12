@@ -842,11 +842,22 @@
   }
 
   /* ---------- relay ---------- */
+  // Tell the controller this display has applied a change (it shows "Display updated ✓").
+  function ack(msg) { if (msg && msg.id && state) F.poke(state.ntfyTopic, { type: 'ack', id: msg.id }); }
+
   function onMessage(msg) {
     var hold = (state && state.settings.holdSeconds) || 30;
-    if (msg.type === 'show') jump(msg.view, msg.hold || hold);
+    if (msg.type === 'ack') return;
+    if (msg.type === 'show') { jump(msg.view, msg.hold || hold); ack(msg); }
     else if (msg.type === 'jar') loadState().then(function () { jump('jars', Math.min(hold, 20)); });
-    else if (msg.type === 'refresh') { loadEvents(); loadState().then(function () { loadSports(); loadFantasy(); }); }
+    else if (msg.type === 'refresh') {
+      Promise.all([loadEvents(), loadLunch(), loadState().then(function () {
+        // re-render what's on screen with the new settings (photos/notes keep their place)
+        if (current === 'calendar') renderCalendar();
+        if (current === 'jars') renderJars();
+        return Promise.all([loadSports(), loadFantasy()]);
+      })]).then(function () { ack(msg); });
+    }
     else if (msg.type === 'photos') {
       var kinds = msg.kind ? [msg.kind === 'quotes' ? 'quotes' : 'photo'] : ['photo', 'quotes'];
       kinds.forEach(function (k) { var a = albums[k]; a.loadList().then(function () { a.pre = null; return a.preload(); }); });
@@ -855,6 +866,7 @@
       // a note was just added: show it now (list is newest-first, so point "last shown" at the end)
       if (notes.length) try { localStorage.setItem(GKEY, notes[notes.length - 1].id); } catch (e) {}
       jump('gratitude', hold);
+      ack(msg);
     });
     else if (msg.type === 'reload') location.reload();
   }

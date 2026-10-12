@@ -86,6 +86,27 @@
   .li .sub { color: var(--muted); font-size: 12px; font-weight: 700; }
   .li .x { border: 0; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; padding: 2px 6px; }
   .card2 { background: var(--card); border-radius: 16px; padding: 14px; display: grid; gap: 10px; }
+  /* floating save bar */
+  .savebar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; max-width: 560px; margin: 0 auto;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: rgba(22,26,36,.97); border-top: 1px solid var(--line); box-shadow: 0 -10px 30px rgba(0,0,0,.35);
+    display: flex; align-items: center; gap: 10px;
+    transform: translateY(110%); transition: transform .25s ease;
+  }
+  .savebar.show { transform: none; }
+  .sb-msg { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 15px; }
+  .sb-msg span:last-child { overflow: hidden; text-overflow: ellipsis; }
+  .savebar .btn { padding: 12px 18px; }
+  .spin { width: 18px; height: 18px; border-radius: 50%; border: 3px solid rgba(255,197,107,.25); border-top-color: var(--warm);
+    animation: spin .8s linear infinite; display: none; flex: none; }
+  .savebar.saving .spin { display: inline-block; }
+  .savebar.saving .btn, .savebar.done .btn { display: none; }
+  .savebar.done .sb-msg { color: #5fd38d; }
+  .savebar.done.warn .sb-msg, .savebar.err .sb-msg { color: var(--bad); }
+  .savebar.err #sbDiscard { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  body.barpad { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
   #setup { display: none; }
   #setup input { margin-bottom: 10px; }
 </style>
@@ -166,7 +187,6 @@
         <label>Combined goal<input type="number" id="jarGoal" min="5" max="400" inputmode="numeric"></label>
       </div>
       <p class="note" style="margin-top:-6px">Combined mode adds everyone's marbles into one jar on the display. The +/− buttons above still track per kid, so you can switch back anytime.</p>
-      <button class="btn primary" id="saveSettings">Save settings</button>
 
       <h3>Teams to follow</h3>
       <div class="list" id="teamList"></div>
@@ -185,12 +205,12 @@
         <select id="tmTeam" size="6" style="display:none"></select>
         <button class="btn primary" id="tmAdd" style="display:none">Add team</button>
       </div>
-      <p class="note" style="margin-top:-4px">Shows each team's last result and next game. Up to 10 teams; remove the out-of-season ones anytime.</p>
+      <p class="note" style="margin-top:-4px">Adding or removing a team saves right away. Up to 10 teams; remove the out-of-season ones anytime.</p>
 
       <h3>Fantasy football</h3>
       <div class="row2">
         <label>ESPN league ID<input type="text" id="fantasyLeagueId" inputmode="numeric" autocomplete="off"></label>
-        <button class="btn small ghost" id="saveFantasy" style="align-self:end">Save league</button>
+        <div></div>
       </div>
       <p class="note" style="margin-top:-6px">The number after <b>leagueId=</b> in your ESPN league URL. The league must be public. Leave blank to hide the view.</p>
 
@@ -208,6 +228,12 @@
     </div>
   </details>
 </main>
+
+<div class="savebar" id="saveBar" role="status" aria-live="polite">
+  <div class="sb-msg"><span class="spin"></span><span id="sbText">Unsaved changes</span></div>
+  <button class="btn ghost" id="sbDiscard">Discard</button>
+  <button class="btn primary" id="sbSave">Save</button>
+</div>
 
 <script src="js/espn.js"></script>
 <script src="js/api.js"></script>
@@ -283,9 +309,12 @@
   /* ---------- show on screen ---------- */
   Array.prototype.forEach.call(document.querySelectorAll('[data-show]'), function (b) {
     b.addEventListener('click', function () {
-      F.poke(state.ntfyTopic, { type: 'show', view: b.getAttribute('data-show') });
+      var id = Math.random().toString(36).slice(2);
+      acks[id] = function () { delete acks[id]; status('on screen ✓'); };
+      setTimeout(function () { if (acks[id]) { delete acks[id]; status('display didn\'t answer', true); } }, 10000);
+      F.poke(state.ntfyTopic, { type: 'show', view: b.getAttribute('data-show'), id: id });
       b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
-      status('sent to display');
+      status('sending…');
     });
   });
 
@@ -346,11 +375,13 @@
   $('grAdd').onclick = function () {
     var text = $('grText').value.trim();
     if (!text) { status('write a note first', true); return; }
-    $('grAdd').disabled = true; status('saving…');
-    F.post('addGratitude', { who: $('grWho').value.trim(), text: text }).then(function (r) {
-      notes = r.notes; renderNotes(); $('grText').value = ''; status('added');
-      F.poke(state.ntfyTopic, { type: 'gratitude' });
-    }).catch(function (e) { status('⚠ ' + e.message, true); }).then(function () { $('grAdd').disabled = false; });
+    if (busy) return;
+    $('grAdd').disabled = true;
+    withFeedback(function () {
+      return F.post('addGratitude', { who: $('grWho').value.trim(), text: text }).then(function (r) {
+        notes = r.notes; renderNotes(); $('grText').value = '';
+      });
+    }, { type: 'gratitude' }).catch(function () {}).then(function () { $('grAdd').disabled = false; });
   };
   $('grList').addEventListener('click', function (e) {
     var b = e.target.closest('[data-del]'); if (!b) return;
@@ -371,10 +402,10 @@
     }).join('') : '<p class="note" style="margin:0">No teams yet.</p>';
   }
   function saveTeams(list) {
-    status('saving…');
-    return F.post('setSettings', { settings: { sportsTeams: list } }).then(function (r) {
-      apply(r.state); status('saved'); F.poke(state.ntfyTopic, { type: 'refresh' });
-    }).catch(function (e) { status('⚠ ' + e.message, true); });
+    if (busy) return Promise.resolve();
+    return withFeedback(function () {
+      return F.post('setSettings', { settings: { sportsTeams: list } }).then(function (r) { apply(r.state); });
+    }, { type: 'refresh' }).catch(function () {});
   }
   $('teamList').addEventListener('click', function (e) {
     var b = e.target.closest('[data-rm]'); if (!b) return;
@@ -413,13 +444,99 @@
   var VIEW_NAMES = { calendar: 'Calendar', jars: 'Marble jars', photo: 'Photo', lunch: 'Lunch menu', weather: 'Weather',
     sports: 'Scores', fantasy: 'Fantasy football', quotes: 'Quote wall', gratitude: 'Gratitude' };
 
-  // Unsaved edits in a settings section are never overwritten by a background refresh.
-  var dirty = { kids: false, display: false };
-  $('kidSet').addEventListener('input', function () { dirty.kids = true; status('unsaved changes'); });
-  ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents', 'lunchUrl', 'lunchImageUrl', 'jarMode', 'jarTitle', 'jarGoal', 'viewChecks'].forEach(function (id) {
-    $(id).addEventListener('input', function () { dirty.display = true; status('unsaved changes'); });
-    $(id).addEventListener('change', function () { dirty.display = true; });
+  /* ---------- save bar: one Save for every settings section, plus feedback for instant saves ---------- */
+  // Unsaved edits in a section are never overwritten by a background refresh.
+  var dirty = { kids: false, display: false, calendars: false };
+  var DISPLAY_FIELDS = ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents', 'lunchUrl', 'lunchImageUrl', 'jarMode', 'jarTitle', 'jarGoal', 'fantasyLeagueId'];
+  function anyDirty() { return dirty.kids || dirty.display || dirty.calendars; }
+  function markDirty(k) { dirty[k] = true; refreshBar(); }
+  $('kidSet').addEventListener('input', function () { markDirty('kids'); });
+  DISPLAY_FIELDS.concat(['viewChecks']).forEach(function (id) {
+    $(id).addEventListener('input', function () { markDirty('display'); });
+    $(id).addEventListener('change', function () { markDirty('display'); });
   });
+  $('cals').addEventListener('change', function () { markDirty('calendars'); });
+
+  var busy = false, hideTimer = null, acks = {};
+  function bar(mode, text) {
+    $('saveBar').className = 'savebar show ' + mode;
+    $('sbText').textContent = text;
+    document.body.classList.add('barpad');
+  }
+  function refreshBar() {
+    if (busy) return;
+    clearTimeout(hideTimer);
+    if (anyDirty()) bar('dirty', 'Unsaved changes');
+    else { $('saveBar').className = 'savebar'; document.body.classList.remove('barpad'); }
+  }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  // Run a save with a visible "Saving…" (at least ~1.2s so it registers), then tell the display
+  // to refresh and wait for it to answer, so "Display updated ✓" means the tablet really has it.
+  function withFeedback(work, poke) {
+    busy = true; clearTimeout(hideTimer);
+    bar('saving', 'Saving…');
+    var t0 = Date.now();
+    return work().then(function () {
+      return wait(Math.max(0, 1200 - (Date.now() - t0)));
+    }).then(function () {
+      if (!poke) return finish('Saved ✓');
+      bar('saving', 'Saved · updating display…');
+      return new Promise(function (resolve) {
+        var id = Math.random().toString(36).slice(2);
+        var timer = setTimeout(function () {
+          delete acks[id];
+          finish('Saved ✓ · display didn\'t answer — is it on?', true); resolve();
+        }, 10000);
+        acks[id] = function () { clearTimeout(timer); delete acks[id]; finish('Saved ✓ · display updated'); resolve(); };
+        F.poke(state.ntfyTopic, Object.assign({ id: id }, poke));
+      });
+    }, function (e) {
+      busy = false;
+      bar('err', 'Couldn\'t save: ' + e.message);
+      throw e;
+    });
+  }
+  function finish(text, warn) {
+    busy = false;
+    bar('done' + (warn ? ' warn' : ''), text);
+    hideTimer = setTimeout(refreshBar, warn ? 5000 : 2500);
+  }
+
+  function saveAll() {
+    if (busy) return;
+    var views = Array.prototype.map.call(document.querySelectorAll('#viewChecks input:checked'), function (i) { return i.value; });
+    if (dirty.display && !views.length) { bar('err', 'Pick at least one view to rotate'); return; }
+    if (dirty.display && !/^(\d*|demo)$/.test($('fantasyLeagueId').value.trim())) { bar('err', 'Fantasy league ID is digits only'); return; }
+    var was = { kids: dirty.kids, display: dirty.display, calendars: dirty.calendars };
+    withFeedback(function () {
+      var p = Promise.resolve(null), last = null;
+      if (was.kids) state.kids.forEach(function (k) {
+        p = p.then(function () {
+          return F.post('setKid', { kidId: k.id, name: $('kn-' + k.id).value, goal: $('kg-' + k.id).value, count: $('kc-' + k.id).value });
+        }).then(function (r) { last = r; });
+      });
+      if (was.display) p = p.then(function () {
+        var st = { views: views, fantasyLeagueId: $('fantasyLeagueId').value.trim() };
+        DISPLAY_FIELDS.forEach(function (k) { if (k !== 'fantasyLeagueId') st[k] = $(k).value; });
+        return F.post('setSettings', { settings: st });
+      }).then(function (r) { last = r; });
+      if (was.calendars) p = p.then(function () {
+        var ids = Array.prototype.map.call(document.querySelectorAll('#cals input:checked'), function (i) { return i.value; });
+        return F.post('setCalendars', { ids: ids });
+      }).then(function (r) { last = r; });
+      return p.then(function () {
+        dirty = { kids: false, display: false, calendars: false };
+        if (last) apply(last.state);
+      });
+    }, { type: 'refresh' }).catch(function () {});
+  }
+  $('sbSave').onclick = saveAll;
+  $('sbDiscard').onclick = function () {
+    dirty = { kids: false, display: false, calendars: false };
+    renderKidFields(); renderDisplayFields(); renderCals();
+    refreshBar();
+  };
 
   function renderKidSettings() {
     if (!dirty.kids) renderKidFields();
@@ -432,8 +549,7 @@
         '<label>Name<input type="text" id="kn-' + k.id + '" value="' + esc(k.name) + '" maxlength="24"></label>' +
         '<label>Goal<input type="number" id="kg-' + k.id + '" value="' + k.goal + '" min="5" max="200" inputmode="numeric"></label>' +
         '<label>Count<input type="number" id="kc-' + k.id + '" value="' + k.count + '" min="0" max="999" inputmode="numeric"></label></div>';
-    }).join('') + '<button class="btn small ghost" id="saveKids" style="width:100%">Save kids</button>';
-    $('saveKids').onclick = saveKids;
+    }).join('');
   }
 
   function renderDisplayFields() {
@@ -448,60 +564,19 @@
     }).join('');
   }
 
-  function saveKids() {
-    status('saving…');
-    state.kids.reduce(function (p, k) {
-      return p.then(function () {
-        return F.post('setKid', { kidId: k.id, name: $('kn-' + k.id).value, goal: $('kg-' + k.id).value, count: $('kc-' + k.id).value });
-      });
-    }, Promise.resolve()).then(function (r) {
-      dirty.kids = false;
-      apply(r.state); status('saved');
-      F.poke(state.ntfyTopic, { type: 'refresh' });
-    }).catch(function (e) { status('⚠ ' + e.message, true); });
+  var calList = null;
+  function renderCals() {
+    if (!calList) return;
+    var sel = state.calendars || [];
+    $('cals').innerHTML = calList.map(function (c) {
+      return '<label class="check"><input type="checkbox" value="' + esc(c.id) + '"' + (sel.indexOf(c.id) >= 0 ? ' checked' : '') + '>' +
+        '<span class="dot" style="background:' + esc(c.color) + '"></span>' + esc(c.name) + '</label>';
+    }).join('');
   }
-
-  $('saveSettings').onclick = function () {
-    var views = Array.prototype.map.call(document.querySelectorAll('#viewChecks input:checked'), function (i) { return i.value; });
-    if (!views.length) { status('pick at least one view', true); return; }
-    status('saving…');
-    F.post('setSettings', { settings: {
-      views: views,
-      viewSeconds: $('viewSeconds').value, holdSeconds: $('holdSeconds').value,
-      daysAhead: $('daysAhead').value, maxEvents: $('maxEvents').value, lunchUrl: $('lunchUrl').value, lunchImageUrl: $('lunchImageUrl').value,
-      jarMode: $('jarMode').value, jarTitle: $('jarTitle').value, jarGoal: $('jarGoal').value
-    } }).then(function (r) {
-      dirty.display = false;
-      apply(r.state); status('saved');
-      F.poke(state.ntfyTopic, { type: 'refresh' });
-    }).catch(function (e) { status('⚠ ' + e.message, true); });
-  };
-
-  $('saveFantasy').onclick = function () {
-    var id = $('fantasyLeagueId').value.trim();
-    if (!/^\d*$/.test(id)) { status('league ID is digits only', true); return; }
-    status('saving…');
-    F.post('setSettings', { settings: { fantasyLeagueId: id } }).then(function (r) {
-      apply(r.state); status('saved'); F.poke(state.ntfyTopic, { type: 'refresh' });
-    }).catch(function (e) { status('⚠ ' + e.message, true); });
-  };
-
   $('loadCals').onclick = function () {
     $('cals').innerHTML = '<p class="note">Loading…</p>';
-    F.get('calendars').then(function (r) {
-      $('cals').innerHTML = r.calendars.map(function (c) {
-        return '<label class="check"><input type="checkbox" value="' + esc(c.id) + '"' + (c.selected ? ' checked' : '') + '>' +
-          '<span class="dot" style="background:' + esc(c.color) + '"></span>' + esc(c.name) + '</label>';
-      }).join('') + '<button class="btn small ghost" id="saveCals" style="width:100%;margin-top:6px">Save calendars</button>';
-      $('saveCals').onclick = function () {
-        var ids = Array.prototype.map.call(document.querySelectorAll('#cals input:checked'), function (i) { return i.value; });
-        status('saving…');
-        F.post('setCalendars', { ids: ids }).then(function (r2) {
-          apply(r2.state); status('saved');
-          F.poke(state.ntfyTopic, { type: 'refresh' });
-        }).catch(function (e) { status('⚠ ' + e.message, true); });
-      };
-    }).catch(function (e) { $('cals').innerHTML = '<p class="note" style="color:var(--bad)">' + esc(e.message) + '</p>'; });
+    F.get('calendars').then(function (r) { calList = r.calendars; renderCals(); })
+      .catch(function (e) { $('cals').innerHTML = '<p class="note" style="color:var(--bad)">' + esc(e.message) + '</p>'; });
   };
 
   function link(page) {
@@ -522,8 +597,11 @@
   /* ---------- boot ---------- */
   function load() {
     return F.get('state').then(function (r) {
+      var first = !state;
       apply(r.state);
-      status(dirty.kids || dirty.display ? 'unsaved changes' : 'connected');
+      if (first) F.listen(state.ntfyTopic, function (m) { if (m && m.type === 'ack' && acks[m.id]) acks[m.id](); });
+      status('connected');
+      if (!dirty.calendars) renderCals();
     })
       .catch(function (e) { status('⚠ ' + e.message, true); });
   }
