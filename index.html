@@ -210,29 +210,59 @@
       .catch(function (e) { setStatus('⚠ photos: ' + e.message); });
   }
 
+  // The menu image is shown as a plain (non-CORS) image so it always loads. The whitespace
+  // trim needs pixel access, which needs CORS; the host's CDN sometimes serves a cached copy
+  // without the CORS header, so the trim box is measured from a separate cache-busted CORS
+  // request and remembered per image URL. If that ever fails, the remembered box (or no trim)
+  // is used — the menu itself never depends on it.
+  var BOXKEY = 'famdash.lunchBox';
+  function savedBox(url) {
+    try { var b = JSON.parse(localStorage.getItem(BOXKEY) || 'null'); return b && b.url === url ? b.box : null; } catch (e) { return null; }
+  }
+  function loadImg(src, cors) {
+    return new Promise(function (resolve, reject) {
+      var im = new Image();
+      if (cors) im.crossOrigin = 'anonymous';
+      im.onload = function () { resolve(im); };
+      im.onerror = function () { reject(new Error('image load failed')); };
+      im.src = src;
+    });
+  }
+  function measureBox(url) {
+    var bust = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'famdash=trim';
+    return loadImg(bust, true).then(findBox).then(function (box) {
+      if (box) try { localStorage.setItem(BOXKEY, JSON.stringify({ url: url, box: box })); } catch (e) {}
+      return box;
+    }).catch(function () { return null; });
+  }
+  function renderLunch(im, box) {
+    var el = document.createElement('canvas');
+    var X = 0, Y = 0, W = im.naturalWidth, H = im.naturalHeight;
+    if (box) { X = box.x; Y = box.y; W = box.w; H = box.h; }
+    el.width = W; el.height = H;
+    el.getContext('2d').drawImage(im, X, Y, W, H, 0, 0, W, H);   // tainted canvas is fine for display
+    el.setAttribute('aria-label', 'School lunch calendar');
+    $('lunchCard').innerHTML = '';
+    $('lunchCard').appendChild(el);
+    fitLunch();
+  }
+
   function loadLunch() {
     return F.get('lunch').then(function (r) {
       if (lunch && lunch.url === r.url) return;
-      return new Promise(function (resolve) {
-        var im = new Image();
-        im.crossOrigin = 'anonymous';   // host sends ACAO:*, so the canvas stays readable for trimming
-        im.onload = function () {
-          var el = trimmed(im);
-          lunch = r;
-          $('lunchCard').innerHTML = '';
-          $('lunchCard').appendChild(el);
-          fitLunch();
-          resolve();
-        };
-        im.onerror = function () { setStatus('⚠ lunch image failed to load'); resolve(); };
-        im.src = r.url;
+      return loadImg(r.url, false).then(function (im) {
+        lunch = r;
+        var box = savedBox(r.url);
+        renderLunch(im, box);
+        if (!box) measureBox(r.url).then(function (b) { if (b && lunch === r) renderLunch(im, b); });
+      }, function () {
+        if (!lunch) setStatus('⚠ lunch image did not load: ' + r.url.split('/').pop());
       });
-    }).catch(function (e) { setStatus('⚠ lunch: ' + e.message); });
+    }).catch(function (e) { if (!lunch) setStatus('⚠ lunch: ' + e.message); });
   }
 
-  // Crop away the near-white margins around the menu. Falls back to the full image
-  // if the canvas can't be read (e.g. the host ever drops its CORS header).
-  function trimmed(im) {
+  // Bounding box of the non-white content, in full-resolution pixels; null if unreadable/implausible.
+  function findBox(im) {
     var W = im.naturalWidth, H = im.naturalHeight;
     try {
       var s = Math.min(1, 700 / Math.max(W, H));
@@ -247,7 +277,6 @@
         var k = (j * sw + i) * 4;
         if (d[k + 3] > 40 && (d[k] < 232 || d[k + 1] < 232 || d[k + 2] < 232)) { cols[i]++; rows[j]++; }
       }
-      // ignore specks: a column/row counts only if a few pixels in it are "ink"
       var minC = Math.max(2, sh * 0.004), minR = Math.max(2, sw * 0.004);
       var x0 = 0, x1 = sw - 1, y0 = 0, y1 = sh - 1;
       while (x0 < x1 && cols[x0] < minC) x0++;
@@ -257,21 +286,11 @@
       var pad = Math.round(Math.max(sw, sh) * 0.012);
       x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
       x1 = Math.min(sw - 1, x1 + pad); y1 = Math.min(sh - 1, y1 + pad);
-      // back to full-resolution coordinates
       var X = Math.floor(x0 / s), Y = Math.floor(y0 / s);
       var CW = Math.min(W - X, Math.ceil((x1 - x0 + 1) / s)), CH = Math.min(H - Y, Math.ceil((y1 - y0 + 1) / s));
-      if (CW < W * 0.25 || CH < H * 0.25) throw new Error('trim looks wrong');
-      var out = document.createElement('canvas');
-      out.width = CW; out.height = CH;
-      out.getContext('2d').drawImage(im, X, Y, CW, CH, 0, 0, CW, CH);
-      out.setAttribute('aria-label', 'School lunch calendar');
-      return out;
-    } catch (e) {
-      var img = document.createElement('img');
-      img.src = im.src; img.alt = 'School lunch calendar';
-      img.width = W; img.height = H;
-      return img;
-    }
+      if (CW < W * 0.25 || CH < H * 0.25) return null;
+      return { x: X, y: Y, w: CW, h: CH };
+    } catch (e) { return null; }
   }
 
   // Size the trimmed menu to the largest box that fits, keeping its aspect ratio.
