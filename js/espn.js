@@ -53,7 +53,9 @@
       us: scoreOf(me.score),
       them: scoreOf(op.score),
       result: me.winner === true ? 'W' : op.winner === true ? 'L' : (c.status.type.completed ? 'T' : ''),
-      tv: tvs[0] || ''
+      tv: tvs[0] || '',
+      series: seriesText(c),
+      note: ((c.notes || [])[0] || {}).headline || ''
     };
   }
 
@@ -130,6 +132,7 @@
     }
     var away = side(comps.filter(function (x) { return x.homeAway === 'away'; })[0] || comps[0]);
     var home = side(comps.filter(function (x) { return x.homeAway === 'home'; })[0] || comps[1]);
+    if (c.series && c.series.type === 'playoff') { if (away) away.record = ''; if (home) home.record = ''; }   // series line says more
     var tvs = []; (c.broadcasts || []).forEach(function (b) { (b.names || []).forEach(function (n) { tvs.push(n); }); });
     (c.geoBroadcasts || []).forEach(function (b) { if (b.media && b.media.shortName && b.market && b.market.type === 'National') tvs.push(b.media.shortName); });
     return {
@@ -137,10 +140,18 @@
       tbd: c.timeValid === false || e.timeValid === false,
       state: c.status.type.state, detail: c.status.type.shortDetail, completed: !!c.status.type.completed,
       tv: tvs[0] || '', national: tvs.some(function (t) { return NATIONAL_TV.test(t); }),
-      neutral: !!c.neutralSite, postseason: (e.season || {}).type === 3 || (c.type || {}).abbreviation === 'RD16',
+      neutral: !!c.neutralSite, postseason: (e.season || {}).type === 3 || !!(c.series && c.series.type === 'playoff'),
+      series: seriesText(c),
       note: ((c.notes || [])[0] || {}).headline || '',
       away: away, home: home
     };
+  }
+
+  // "CLE leads series 1-0" -> "CLE leads 1-0"; "Series tied 1-1"; "MIL wins 4-2".
+  function seriesText(c) {
+    var s = c && c.series;
+    if (!s || !s.summary || s.type !== 'playoff') return '';
+    return s.summary.replace(/ series /i, ' ').replace(/^Series tied/i, 'Tied');
   }
 
   // How interesting a game is: live and close beats ranked beats national TV beats the rest.
@@ -232,6 +243,30 @@
     });
   }
 
+  function playerOf(e) {
+    var p = e.playerPoolEntry.player || {};
+    var parts = String(p.fullName || '').split(' ');
+    return {
+      name: p.defaultPositionId === 16 ? String(p.fullName).replace(/ D\/ST$/, '') : (parts.length > 1 ? parts[0][0] + '. ' + parts.slice(1).join(' ') : p.fullName),
+      full: p.fullName, pos: POS[p.defaultPositionId] || '',
+      pts: Math.round((e.playerPoolEntry.appliedStatTotal || 0) * 10) / 10,
+      img: p.id > 0 ? 'https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/' + p.id + '.png&w=96&h=70&cb=1' : ''
+    };
+  }
+
+  // Best player left on the bench, and how much more he scored than the weakest starter at his position.
+  function benchBest(side) {
+    var r = side && (side.rosterForCurrentScoringPeriod || side.rosterForMatchupPeriod);
+    if (!r || !r.entries) return null;
+    var bench = r.entries.filter(function (e) { return e.lineupSlotId === 20 && e.playerPoolEntry; }).map(playerOf)
+      .sort(function (a, b) { return b.pts - a.pts; })[0];
+    if (!bench || bench.pts <= 0) return null;
+    var starters = r.entries.filter(function (e) { return !BENCH[e.lineupSlotId] && e.playerPoolEntry; }).map(playerOf)
+      .filter(function (p) { return p.pos === bench.pos; }).sort(function (a, b) { return a.pts - b.pts; });
+    var weakest = starters[0];
+    return Object.assign({}, bench, weakest ? { over: weakest, cost: Math.round((bench.pts - weakest.pts) * 10) / 10 } : {});
+  }
+
   function topPerformers(side, n) {
     var r = side && (side.rosterForCurrentScoringPeriod || side.rosterForMatchupPeriod);
     if (!r || !r.entries) return [];
@@ -295,10 +330,18 @@
             points: Math.round((pts || 0) * 100) / 100,
             projected: !final && x.totalProjectedPointsLive != null ? Math.round(x.totalProjectedPointsLive * 10) / 10 : null,
             won: final && ((m.winner === 'HOME' && which === 'home') || (m.winner === 'AWAY' && which === 'away')),
-            top: topPerformers(bx, 3)
+            top: topPerformers(bx, 3),
+            bench: benchBest(bx)
           };
         }
         var matchups = games.map(function (m) { return { home: side(m, 'home'), away: side(m, 'away'), winner: m.winner }; });
+        // Bench MVP: the league's highest-scoring benched player this week.
+        var benchMvp = null;
+        matchups.forEach(function (m) {
+          [m.home, m.away].forEach(function (x) {
+            if (x && x.bench && (!benchMvp || x.bench.pts > benchMvp.player.pts)) benchMvp = { player: x.bench, team: x.team };
+          });
+        });
         var high = null;
         matchups.forEach(function (m) { [m.home, m.away].forEach(function (x) { if (x && (!high || x.points > high.points)) high = x; }); });
         var standings = Object.keys(byId).map(function (k) { return byId[k]; })
@@ -309,7 +352,7 @@
         return {
           league: (j.settings || {}).name || 'Fantasy', season: season, week: week, final: final,
           matchups: matchups, standings: standings, high: final && high ? { team: high.team, points: high.points } : null,
-          upNext: upNext, nextWeek: cur
+          upNext: upNext, nextWeek: cur, benchMvp: benchMvp
         };
       });
     });

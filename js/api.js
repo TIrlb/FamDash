@@ -206,10 +206,10 @@
     }
     function DEMO_GAMES() {
       return [
-        g('baseball/mlb', 'in', 'Top 7th', ['Dodgers', 'LAD', 'mlb/500/lad.png', null, 3], ['Brewers', 'MIL', 'mlb/500/mil.png', null, 2], { tv: 'TBS', note: 'NLCS · Game 3' }),
+        g('baseball/mlb', 'in', 'Top 7th', ['Dodgers', 'LAD', 'mlb/500/lad.png', null, 3], ['Brewers', 'MIL', 'mlb/500/mil.png', null, 2], { tv: 'TBS', note: 'NLCS - Game 3', series: 'MIL leads 2-0' }),
         g('basketball/nba', 'in', '3rd 4:12', ['Bucks', 'MIL', 'nba/500/mil.png', null, 74], ['Bulls', 'CHI', 'nba/500/chi.png', null, 78], { tv: 'NBC Sports' }),
         g('football/nfl', 'pre', '', ['Bills', 'BUF', 'nfl/500/buf.png', null, null, false, '4-1'], ['Chiefs', 'KC', 'nfl/500/kc.png', null, null, false, '4-1'], { date: dayAt(0, 20, 15), tv: 'ESPN' }),
-        g('baseball/mlb', 'pre', '', ['Guardians', 'CLE', 'mlb/500/cle.png'], ['Rays', 'TB', 'mlb/500/tb.png'], { date: dayAt(0, 20, 8), tv: 'FS1', note: 'ALCS · Game 3' }),
+        g('baseball/mlb', 'pre', '', ['Guardians', 'CLE', 'mlb/500/cle.png'], ['Rays', 'TB', 'mlb/500/tb.png'], { date: dayAt(0, 20, 8), tv: 'FS1', note: 'ALCS - Game 2', series: 'CLE leads 1-0' }),
         g('football/college-football', 'pre', '', ['Ohio State', 'OSU', 'ncaa/500/194.png', 2, null, false, '6-0'], ['Indiana', 'IU', 'ncaa/500/84.png', 9, null, false, '6-0'], { date: dayAt(0, 21, 0), tv: 'FOX' }),
         g('basketball/nba', 'post', 'Final', ['Thunder', 'OKC', 'nba/500/okc.png', null, 112, true], ['Hawks', 'ATL', 'nba/500/atl.png', null, 104], { date: dayAt(-1, 19, 0), yesterday: true })
       ];
@@ -225,6 +225,7 @@
           { winner: 'HOME', home: { team: T[2], points: 132.4, won: true, top: [P('J. Allen', 'QB', 31.2, 3918298), P('J. Chase', 'WR', 24.9, 4362628), P('Steelers', 'D/ST', 14, 0)] },
             away: { team: T[3], points: 118.7, won: false, top: [P('S. Barkley', 'RB', 27.5, 3929630), P('A. St. Brown', 'WR', 19.3, 4374302), P('T. Kelce', 'TE', 12.4, 15847)] } }],
         upNext: [{ home: T[1], away: T[3] }, { home: T[2], away: T[0] }],
+        benchMvp: { team: T[3], player: Object.assign(P('P. Nacua', 'WR', 25.4, 4426515), { over: P('J. Smith-Njigba', 'WR', 9.8), cost: 15.6 }) },
         standings: T };
     }
     function photoSvg(p, i) {

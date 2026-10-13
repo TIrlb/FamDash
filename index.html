@@ -170,6 +170,7 @@
   .gm-t .rc { font-size: 1.8vh; color: var(--muted); font-weight: 700; }
   .gm.post .gm-t:not(.win) { color: var(--muted); }
   .gm-note { font-size: 1.7vh; color: var(--muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gm-note.ser { color: var(--ink); opacity: .85; }
   .gm.fav { box-shadow: inset 0 0 0 2px rgba(255,197,107,.55); }
 
   /* fantasy */
@@ -208,6 +209,12 @@
   .ff-stand td.n { color: var(--muted); width: 1.6em; padding-right: .8vw; }
   .ff-stand td.t { max-width: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .ff-stand td.r { text-align: right; padding-left: 1vw; font-variant-numeric: tabular-nums; }
+  .ff-bench { display: flex; align-items: center; gap: 1.2vw; }
+  .ff-bench .hs { width: 8vh; height: 8vh; border-radius: 50%; background: rgba(255,255,255,.08) center / cover no-repeat; flex: none; }
+  .ff-bench .bn { font-family: 'Fredoka', sans-serif; font-size: 3vh; line-height: 1.1; }
+  .ff-bench .bn b { color: var(--warm); font-weight: 600; }
+  .ff-bench .bd { font-size: 1.9vh; color: var(--muted); font-weight: 700; margin-top: .4vh; line-height: 1.35; }
+  .ff-bench .bd em { font-style: normal; color: #ff8a7a; }
   .ff-next div { font-size: 2.2vh; font-weight: 700; padding: .7vh 0; border-top: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ff-next div span { color: var(--muted); }
 
@@ -289,6 +296,7 @@
     <div class="ff-list" id="ffList"></div>
     <div class="ff-right">
       <div class="ff-stand card"><h2>Standings</h2><table id="ffStand"></table></div>
+      <div class="ff-stand card" id="ffBenchCard" style="display:none"><h2>Bench MVP</h2><div class="ff-bench" id="ffBench"></div></div>
       <div class="ff-stand ff-next card" id="ffNext" style="display:none"></div>
     </div>
   </div>
@@ -610,6 +618,7 @@
     else mu = oppHtml(g);
     if (t.why === 'today' || t.why === 'tomorrow') sub = (g.tbd ? 'Time TBD' : clock(g.date)) + (g.tv ? ' · ' + esc(g.tv) : '');
     else sub = t.record ? esc(t.record) + (t.standing ? ' · ' + esc(t.standing) : '') : '';
+    if (g.series) sub = [g.note, g.series].filter(Boolean).map(esc).join(' · ') + (sub ? ' · ' + sub : '');
     return '<div class="fv card" style="border-left-color:' + esc(t.color || 'var(--line)') + '">' +
       (t.logo ? '<img src="' + esc(t.logo) + '" alt="" onerror="this.style.display=\'none\'">' : '') +
       '<div class="info">' + badge + '<div class="nm">' + esc(t.short || t.name) + '</div>' +
@@ -632,7 +641,7 @@
     }
     return '<div class="gm card ' + g.state + (fav ? ' fav' : '') + '"><div class="gm-top"><span class="lg">' + esc(g.leagueShort) + '</span>' +
       '<span class="st' + cls + '">' + st + '</span></div>' + row(g.away) + row(g.home) +
-      (g.note ? '<div class="gm-note">' + esc(g.note) + '</div>' : '') + '</div>';
+      ((g.note || g.series) ? '<div class="gm-note' + (g.series ? ' ser' : '') + '">' + [g.note, g.series].filter(Boolean).map(esc).join(' · ') + '</div>' : '') + '</div>';
   }
 
   function renderSports() {
@@ -681,6 +690,15 @@
       return '<tr><td class="n">' + (i + 1) + '</td><td class="t">' + esc(t.name) + '</td><td class="r">' + t.wins + '-' + t.losses +
         (t.ties ? '-' + t.ties : '') + '</td><td class="r dim" style="color:var(--muted)">' + Math.round(t.pf) + '</td></tr>';
     }).join('');
+    var bm = f.benchMvp;
+    if (bm && bm.player) {
+      var p = bm.player, t = bm.team || {};
+      $('ffBenchCard').style.display = '';
+      $('ffBench').innerHTML = '<span class="hs"' + (p.img ? ' style="background-image:url(\'' + esc(p.img) + '\')"' : '') + '></span>' +
+        '<div><div class="bn">' + esc(p.name) + ' <b>' + p.pts.toFixed(1) + '</b></div>' +
+        '<div class="bd">' + esc(p.pos) + ' on ' + esc(t.owner || t.name) + '\'s bench' +
+        (p.cost > 0 ? '<br>Started ' + esc(p.over.name) + ' instead · <em>−' + p.cost.toFixed(1) + ' pts</em>' : '') + '</div></div>';
+    } else $('ffBenchCard').style.display = 'none';
     var nx = $('ffNext');
     if (f.upNext && f.upNext.length) {
       nx.style.display = '';
