@@ -137,43 +137,49 @@
   .wx-radar .img { flex: 1; min-height: 0; border-radius: 1.2vh; background: #0d1018 center / contain no-repeat; }
   .wx-radar .cap { font-size: 1.9vh; color: var(--muted); font-weight: 700; margin-top: 1vh; }
 
-  /* sports */
-  .sp-grid { display: grid; gap: 2vh 2vw; height: 100%; grid-auto-rows: 1fr; }
-  .sp-card { padding: 2vh 1.6vw; display: flex; flex-direction: column; gap: 1.3vh; min-height: 0; overflow: hidden; }
-  .sp-head { display: flex; align-items: center; gap: 1.2vw; }
-  .sp-head img { width: 6.4vh; height: 6.4vh; object-fit: contain; flex: none; }
-  .sp-head .nm { font-family: 'Fredoka', sans-serif; font-size: 3.4vh; line-height: 1.1; }
-  .sp-head .rec { font-size: 2vh; color: var(--muted); font-weight: 700; }
-  .sp-row { display: flex; align-items: flex-start; gap: .8vw; font-size: 2.5vh; font-weight: 700; }
-  .sp-row .lbl, .sp-row .pill { margin-top: .5vh; }
-  .sp-main { min-width: 0; flex: 1; }
-  .sp-main .l1 { display: flex; align-items: center; gap: .8vw; white-space: nowrap; overflow: hidden; }
-  .sp-main .dim { display: block; font-size: .82em; margin-top: .2vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sp-row .lbl { width: 4.2vw; flex: none; font-size: 1.8vh; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-  .sp-row img { width: 3.4vh; height: 3.4vh; object-fit: contain; flex: none; }
-  .sp-row .res { font-family: 'Fredoka', sans-serif; font-weight: 600; min-width: 1.6em; }
-  .sp-row .res.W { color: #5fd38d; } .sp-row .res.L { color: #ff8a7a; }
-  .sp-row .dim { color: var(--muted); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
-  .pill { font-size: 1.7vh; font-weight: 800; padding: .3vh .7vw; border-radius: 99px; background: #e2364a; color: #fff; letter-spacing: .06em; }
-  .sp-opp { display: inline-flex; align-items: center; gap: .4vw; }
-  .sp-grid.roomy .sp-card { padding: 3vh 2.2vw; gap: 2.4vh; }
-  .sp-grid.roomy .sp-head img { width: 9vh; height: 9vh; }
-  .sp-grid.roomy .sp-head .nm { font-size: 4.4vh; }
-  .sp-grid.roomy .sp-head .rec { font-size: 2.4vh; }
-  .sp-grid.roomy .sp-row { font-size: 3.1vh; }
-  .sp-grid.roomy .sp-row img { width: 4.2vh; height: 4.2vh; }
-  .sp-grid.roomy .sp-row .lbl { font-size: 2vh; width: 5vw; }
-  .sp-grid.compact .sp-head img { width: 5vh; height: 5vh; }
-  .sp-grid.compact .sp-head .nm { font-size: 2.8vh; }
-  .sp-grid.compact .sp-row { font-size: 2.1vh; }
+  /* scores: favorites on game days + top games */
+  #v-sports .body { display: flex; flex-direction: column; gap: 2.2vh; }
+  .sp-feat { display: grid; gap: 2vw; flex: none; }
+  .sp-feat:empty, .sp-games:empty { display: none; }
+  .fv { display: flex; align-items: center; gap: 1.6vw; padding: 2vh 1.8vw; border-left: .7vh solid var(--line); min-width: 0; }
+  .fv > img { width: 9vh; height: 9vh; object-fit: contain; flex: none; }
+  .fv .info { min-width: 0; flex: 1; }
+  .fv .badge2 { display: inline-block; font-size: 1.7vh; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--warm); margin-bottom: .4vh; }
+  .fv .badge2.live { color: #ff6b6b; }
+  .fv .nm { font-family: 'Fredoka', sans-serif; font-size: 3.6vh; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fv .rec { font-size: 2vh; color: var(--muted); font-weight: 700; }
+  .fv .mu { display: flex; align-items: center; gap: .6vw; font-size: 2.8vh; font-weight: 800; margin-top: .8vh; white-space: nowrap; overflow: hidden; }
+  .fv .mu img { width: 3.8vh; height: 3.8vh; object-fit: contain; }
+  .fv .mu .res { font-family: 'Fredoka', sans-serif; }
+  .fv .mu .res.W { color: #5fd38d; } .fv .mu .res.L { color: #ff8a7a; }
+  .fv .sub { font-size: 2.1vh; color: var(--muted); font-weight: 700; margin-top: .4vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sp-h2 { font-size: 2.2vh; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; flex: none; margin-bottom: -.8vh; }
+  .sp-games { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.8vh 1.6vw; align-content: start; }
+  .gm { padding: 1.5vh 1.3vw; display: flex; flex-direction: column; gap: .7vh; min-width: 0; }
+  .gm-top { display: flex; justify-content: space-between; align-items: center; font-size: 1.8vh; font-weight: 800; color: var(--muted); }
+  .gm-top .lg { letter-spacing: .08em; }
+  .gm-top .st { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1vw; }
+  .gm-top .st.live { color: #ff6b6b; }
+  .gm-top .st.live::before { content: ''; display: inline-block; width: 1vh; height: 1vh; border-radius: 50%; background: #ff6b6b; margin-right: .5vw; vertical-align: .15vh; animation: blink 1.6s infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+  .gm-t { display: flex; align-items: center; gap: .7vw; font-size: 2.6vh; font-weight: 800; }
+  .gm-t img { width: 3.6vh; height: 3.6vh; object-fit: contain; flex: none; }
+  .gm-t .rk { font-size: 1.7vh; color: var(--muted); font-weight: 800; }
+  .gm-t .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gm-t .sc { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 3vh; font-variant-numeric: tabular-nums; }
+  .gm-t .rc { font-size: 1.8vh; color: var(--muted); font-weight: 700; }
+  .gm.post .gm-t:not(.win) { color: var(--muted); }
+  .gm-note { font-size: 1.7vh; color: var(--muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gm.fav { box-shadow: inset 0 0 0 2px rgba(255,197,107,.55); }
 
   /* fantasy */
-  #v-fantasy .body { display: grid; grid-template-columns: 1.7fr 1fr; gap: 3vw; }
-  .ff-list { display: grid; gap: 2vh; align-content: start; }
+  #v-fantasy .body { display: grid; grid-template-columns: 1.75fr 1fr; gap: 2.6vw; }
+  .ff-list { display: grid; gap: 1.8vh; align-content: start; }
   .ff-list.two { grid-template-columns: 1fr 1fr; }
-  .ff-match { padding: 1.4vh 1.4vw; }
-  .ff-side { display: flex; align-items: center; gap: 1vw; padding: .9vh 0; }
+  .ff-match { padding: 1.2vh 1.4vw; }
+  .ff-side { padding: .8vh 0; }
   .ff-side + .ff-side { border-top: 1px solid var(--line); }
+  .ff-row { display: flex; align-items: center; gap: 1vw; }
   .ff-logo { width: 5.4vh; height: 5.4vh; border-radius: 50%; background: rgba(255,255,255,.08); flex: none; position: relative; overflow: hidden; }
   .ff-logo::before { content: attr(data-i); position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center;
     font: 600 1.9vh 'Fredoka', sans-serif; color: var(--muted); }
@@ -184,14 +190,26 @@
   .ff-side .pts { text-align: right; }
   .ff-side .pts b { font-family: 'Fredoka', sans-serif; font-size: 4.4vh; font-weight: 600; font-variant-numeric: tabular-nums; }
   .ff-side .pts small { display: block; font-size: 1.8vh; color: var(--muted); font-weight: 700; }
-  .ff-side.lead .pts b { color: var(--warm); }
-  .ff-stand { padding: 2vh 1.6vw; align-self: start; }
+  .ff-side.lead .pts b, .ff-side.won .pts b { color: var(--warm); }
+  .ff-side.lost .tn, .ff-side.lost .pts b { color: var(--muted); }
+  .ff-tag { display: inline-block; font: 800 1.5vh 'Nunito', sans-serif; letter-spacing: .06em; padding: .2vh .6vw; border-radius: 99px; vertical-align: .5vh; margin-left: .5vw; }
+  .ff-tag.w { background: #5fd38d; color: #0d2a19; }
+  .ff-tag.hi { background: var(--warm); color: #3a2400; }
+  .ff-perf { display: flex; gap: .7vw; margin: .7vh 0 .2vh 6.4vh; flex-wrap: nowrap; overflow: hidden; }
+  .pf { display: flex; align-items: center; gap: .5vw; background: rgba(255,255,255,.05); border-radius: 99px; padding: .3vh .9vw .3vh .3vh; font-size: 1.9vh; font-weight: 700; white-space: nowrap; min-width: 0; }
+  .pf .hs { width: 3.6vh; height: 3.6vh; border-radius: 50%; background: rgba(255,255,255,.08) center / cover no-repeat; flex: none; }
+  .pf .pp { color: var(--muted); font-size: 1.5vh; }
+  .pf b { color: var(--warm); font-family: 'Fredoka', sans-serif; font-weight: 600; }
+  .ff-right { display: flex; flex-direction: column; gap: 1.8vh; align-self: start; }
+  .ff-stand { padding: 2vh 1.6vw; }
   .ff-stand h2 { font-size: 2.4vh; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; margin-bottom: 1.2vh; }
   .ff-stand table { width: 100%; border-collapse: collapse; font-size: 2.5vh; font-weight: 700; }
   .ff-stand td { padding: .9vh 0; border-top: 1px solid var(--line); white-space: nowrap; }
   .ff-stand td.n { color: var(--muted); width: 1.6em; padding-right: .8vw; }
   .ff-stand td.t { max-width: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .ff-stand td.r { text-align: right; padding-left: 1vw; font-variant-numeric: tabular-nums; }
+  .ff-next div { font-size: 2.2vh; font-weight: 700; padding: .7vh 0; border-top: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ff-next div span { color: var(--muted); }
 
   /* quotes (same frame as photos) */
   #v-quotes { padding: 0; background: #000; }
@@ -257,15 +275,22 @@
 </section>
 
 <section class="view page" id="v-sports">
-  <h1>Scores <span>&amp; schedule</span></h1>
-  <div class="body"><div class="sp-grid" id="spGrid"></div></div>
+  <h1 id="spTitle">Scores</h1>
+  <div class="body">
+    <div class="sp-feat" id="spFeat"></div>
+    <div class="sp-h2" id="spH2"></div>
+    <div class="sp-games" id="spGames"></div>
+  </div>
 </section>
 
 <section class="view page" id="v-fantasy">
   <h1 id="ffTitle">Fantasy</h1>
   <div class="body">
     <div class="ff-list" id="ffList"></div>
-    <div class="ff-stand card"><h2>Standings</h2><table id="ffStand"></table></div>
+    <div class="ff-right">
+      <div class="ff-stand card"><h2>Standings</h2><table id="ffStand"></table></div>
+      <div class="ff-stand ff-next card" id="ffNext" style="display:none"></div>
+    </div>
   </div>
 </section>
 
@@ -313,7 +338,8 @@
   }
 
   var state = null, events = [];
-  var wxData = null, sportsData = [], fantasyData = null, notes = [];
+  var wxData = null, scoresData = null, fantasyData = null, notes = [];
+  var DEFAULT_SCORE_LEAGUES = ['football/college-football', 'football/nfl', 'basketball/nba', 'baseball/mlb'];
   var shownCounts = {};           // marble counts last drawn on the jar view
   var views = ['calendar', 'jars', 'photo', 'lunch', 'weather', 'sports', 'fantasy', 'quotes', 'gratitude'];
   var lunch = null;               // {url, name} once the image has actually loaded
@@ -347,11 +373,12 @@
   }
   function loadSports() {
     if (!state) return Promise.resolve();
-    return F.sports(state.settings.sportsTeams || []).then(function (r) {
-      // If ESPN hiccups for a team, keep showing its last good card instead of "Couldn't load".
-      var prev = {};
-      sportsData.forEach(function (t) { if (!t.error) prev[t.league + ':' + t.id] = t; });
-      sportsData = (r.teams || []).map(function (t) { return t.error && prev[t.league + ':' + t.id] ? prev[t.league + ':' + t.id] : t; });
+    var st = state.settings;
+    var leagues = Array.isArray(st.scoreLeagues) ? st.scoreLeagues : DEFAULT_SCORE_LEAGUES;
+    return F.scores(leagues, st.sportsTeams || []).then(function (r) {
+      // An empty result right after a good one is usually an ESPN hiccup: keep what we had.
+      var empty = !(r.games || []).length && !(r.featured || []).length;
+      if (!empty || !scoresData || Date.now() - scoresData.at > 30 * 60000) scoresData = { games: r.games || [], featured: r.featured || [], at: Date.now() };
       if (current === 'sports') renderSports();
     }).catch(function (e) { setStatus('⚠ scores: ' + e.message); });
   }
@@ -571,53 +598,96 @@
     return '<span class="sp-opp">' + (g.home || g.neutral ? 'vs' : '@') + (g.opp.logo ? '<img src="' + esc(g.opp.logo) + '" alt="" onerror="this.style.display=\'none\'">' : '') +
       (g.opp.rank ? '#' + g.opp.rank + ' ' : '') + esc(g.opp.name) + '</span>';
   }
+  function clock(iso) { return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+
+  function featCard(t) {
+    var g = t.game, badge, mu, sub;
+    if (t.why === 'live') { badge = '<span class="badge2 live">● Live · ' + esc(g.detail) + '</span>'; }
+    else if (t.why === 'final') { badge = '<span class="badge2">Final' + (when(g.date) === 'Yesterday' ? ' · last night' : '') + '</span>'; }
+    else { badge = '<span class="badge2">' + (t.why === 'today' ? (new Date(g.date).getHours() >= 17 ? 'Tonight' : 'Today') : 'Tomorrow') + '</span>'; }
+    if (t.why === 'final') mu = '<span class="res ' + g.result + '">' + esc(g.result) + ' ' + esc(g.us) + '–' + esc(g.them) + '</span> ' + oppHtml(g);
+    else if (t.why === 'live') mu = '<span class="res">' + esc(g.us) + '–' + esc(g.them) + '</span> ' + oppHtml(g);
+    else mu = oppHtml(g);
+    if (t.why === 'today' || t.why === 'tomorrow') sub = (g.tbd ? 'Time TBD' : clock(g.date)) + (g.tv ? ' · ' + esc(g.tv) : '');
+    else sub = t.record ? esc(t.record) + (t.standing ? ' · ' + esc(t.standing) : '') : '';
+    return '<div class="fv card" style="border-left-color:' + esc(t.color || 'var(--line)') + '">' +
+      (t.logo ? '<img src="' + esc(t.logo) + '" alt="" onerror="this.style.display=\'none\'">' : '') +
+      '<div class="info">' + badge + '<div class="nm">' + esc(t.short || t.name) + '</div>' +
+      '<div class="mu">' + mu + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div></div>';
+  }
+
+  function gameTile(g, favIds) {
+    var st, cls = '';
+    if (g.state === 'in') { st = esc(g.detail); cls = ' live'; }
+    else if (g.state === 'post') st = 'Final' + (g.yesterday ? ' · last night' : '');
+    else st = (g.tbd ? 'TBD' : clock(g.date)) + (g.tv ? ' · ' + esc(g.tv) : '');
+    var fav = [g.away, g.home].some(function (t) { return t && favIds[g.league + ':' + t.id]; });
+    function row(t) {
+      if (!t) return '';
+      var showScore = g.state !== 'pre' && t.score != null;
+      return '<div class="gm-t' + (t.winner ? ' win' : '') + '">' +
+        (t.logo ? '<img src="' + esc(t.logo) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '') +
+        (t.rank ? '<span class="rk">' + t.rank + '</span>' : '') + '<span class="nm">' + esc(t.name) + '</span>' +
+        (showScore ? '<span class="sc">' + esc(t.score) + '</span>' : (t.record ? '<span class="rc">' + esc(t.record) + '</span>' : '')) + '</div>';
+    }
+    return '<div class="gm card ' + g.state + (fav ? ' fav' : '') + '"><div class="gm-top"><span class="lg">' + esc(g.leagueShort) + '</span>' +
+      '<span class="st' + cls + '">' + st + '</span></div>' + row(g.away) + row(g.home) +
+      (g.note ? '<div class="gm-note">' + esc(g.note) + '</div>' : '') + '</div>';
+  }
+
   function renderSports() {
-    var g = $('spGrid'), n = sportsData.length;
-    var cols = n <= 1 ? 1 : n <= 4 ? 2 : 3;
-    g.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
-    g.className = 'sp-grid' + (n > 6 ? ' compact' : n <= 4 ? ' roomy' : '');
-    g.innerHTML = sportsData.map(function (t) {
-      var rows = [];
-      function row(lbl, l1, sub) {
-        return '<div class="sp-row">' + lbl + '<div class="sp-main"><div class="l1">' + l1 + '</div>' + (sub ? '<span class="dim">' + sub + '</span>' : '') + '</div></div>';
-      }
-      if (t.live) rows.push(row('<span class="pill">LIVE</span>', '<span class="res">' + esc(t.live.us) + '–' + esc(t.live.them) + '</span>' + oppHtml(t.live), esc(t.live.detail)));
-      if (t.last) rows.push(row('<span class="lbl">Last</span>', '<span class="res ' + t.last.result + '">' + esc(t.last.result) + '</span>' +
-        '<span>' + esc(t.last.us) + '–' + esc(t.last.them) + '</span>' + oppHtml(t.last), when(t.last.date)));
-      if (t.next) rows.push(row('<span class="lbl">Next</span>', oppHtml(t.next), when(t.next.date, !t.next.tbd) + (t.next.tbd ? ' · time TBD' : '') + (t.next.tv ? ' · ' + esc(t.next.tv) : '')));
-      else if (!t.live) rows.push(row('<span class="lbl">Next</span>', '<span class="dim" style="font-size:1em;margin:0">' + (t.error ? 'Couldn\'t load' : 'No game scheduled') + '</span>', ''));
-      return '<div class="sp-card card" style="border-left:.6vh solid ' + esc(t.color || 'var(--line)') + '"><div class="sp-head">' +
-        (t.logo ? '<img src="' + esc(t.logo) + '" alt="" onerror="this.style.display=\'none\'">' : '') +
-        '<div><div class="nm">' + esc(t.short || t.name) + '</div><div class="rec">' +
-        [t.record, t.standing || t.leagueName].filter(Boolean).map(esc).join(' · ') + '</div></div></div>' + rows.join('') + '</div>';
-    }).join('');
+    var d = scoresData; if (!d) return;
+    var feat = d.featured.slice(0, 3);
+    var favIds = {};
+    ((state && state.settings.sportsTeams) || []).forEach(function (t) { favIds[t.league + ':' + t.id] = 1; });
+    $('spTitle').innerHTML = 'Scores <span>· ' + new Date().toLocaleDateString([], { weekday: 'long' }) + '</span>';
+    $('spFeat').style.gridTemplateColumns = 'repeat(' + Math.max(1, feat.length) + ', 1fr)';
+    $('spFeat').innerHTML = feat.map(featCard).join('');
+    var games = d.games.slice(0, feat.length ? 6 : 9);
+    $('spH2').textContent = feat.length && games.length ? 'Top games' : '';
+    $('spH2').style.display = feat.length && games.length ? '' : 'none';
+    $('spGames').innerHTML = games.map(function (g) { return gameTile(g, favIds); }).join('');
   }
 
   /* ---------- fantasy ---------- */
   function renderFantasy() {
     var f = fantasyData; if (!f || !f.league) return;
-    $('ffTitle').innerHTML = esc(f.league) + ' <span>· Week ' + esc(f.week) + '</span>';
+    $('ffTitle').innerHTML = esc(f.league) + ' <span>· Week ' + esc(f.week) + (f.final ? ' final' : '') + '</span>';
     var list = $('ffList');
-    list.className = 'ff-list' + (f.matchups.length > 3 ? ' two' : '');
-    function side(x, other, done) {
-      if (!x) return '<div class="ff-side"><div class="who"><div class="tn">BYE</div></div></div>';
-      var lead = other && x.points > other.points;
+    var many = f.matchups.length > 3;
+    list.className = 'ff-list' + (many ? ' two' : '');
+    var hiId = f.high && f.high.team ? f.high.team.id : null;
+    function side(x, other) {
+      if (!x) return '<div class="ff-side"><div class="ff-row"><div class="who"><div class="tn">BYE</div></div></div></div>';
       var t = x.team || {};
+      var cls = f.final ? (x.won ? ' won' : ' lost') : (other && x.points > other.points ? ' lead' : '');
       var rec = t.wins + '-' + t.losses + (t.ties ? '-' + t.ties : '');
-      return '<div class="ff-side' + (lead ? ' lead' : '') + '">' +
+      var tags = (x.won ? '<span class="ff-tag w">W</span>' : '') + (hiId === t.id ? '<span class="ff-tag hi">HIGH SCORE</span>' : '');
+      var perf = !many && x.top && x.top.length ? '<div class="ff-perf">' + x.top.map(function (p) {
+        return '<span class="pf"><span class="hs"' + (p.img ? ' style="background-image:url(\'' + esc(p.img) + '\')"' : '') + '></span>' +
+          esc(p.name) + ' <span class="pp">' + esc(p.pos) + '</span> <b>' + p.pts.toFixed(1) + '</b></span>';
+      }).join('') + '</div>' : '';
+      return '<div class="ff-side' + cls + '"><div class="ff-row">' +
         '<span class="ff-logo" data-i="' + esc((t.abbrev || t.name || '?').slice(0, 3)) + '">' +
         (t.logo ? '<img src="' + esc(t.logo) + '" alt="" onerror="this.remove()">' : '') + '</span>' +
-        '<div class="who"><div class="tn">' + esc(t.name) + '</div><div class="ow">' + esc(t.owner) + ' · ' + rec + '</div></div>' +
-        '<div class="pts"><b>' + x.points.toFixed(1) + '</b>' + (!done && x.projected != null ? '<small>proj ' + x.projected.toFixed(1) + '</small>' : '') + '</div></div>';
+        '<div class="who"><div class="tn">' + esc(t.name) + tags + '</div><div class="ow">' + esc(t.owner) + ' · ' + rec + (t.streak ? ' · ' + esc(t.streak) : '') + '</div></div>' +
+        '<div class="pts"><b>' + x.points.toFixed(1) + '</b>' + (!f.final && x.projected != null ? '<small>proj ' + x.projected.toFixed(1) + '</small>' : '') + '</div></div>' +
+        perf + '</div>';
     }
     list.innerHTML = f.matchups.map(function (m) {
-      var done = m.winner && m.winner !== 'UNDECIDED';
-      return '<div class="ff-match card">' + side(m.home, m.away, done) + side(m.away, m.home, done) + '</div>';
+      return '<div class="ff-match card">' + side(m.home, m.away) + side(m.away, m.home) + '</div>';
     }).join('');
     $('ffStand').innerHTML = f.standings.map(function (t, i) {
       return '<tr><td class="n">' + (i + 1) + '</td><td class="t">' + esc(t.name) + '</td><td class="r">' + t.wins + '-' + t.losses +
         (t.ties ? '-' + t.ties : '') + '</td><td class="r dim" style="color:var(--muted)">' + Math.round(t.pf) + '</td></tr>';
     }).join('');
+    var nx = $('ffNext');
+    if (f.upNext && f.upNext.length) {
+      nx.style.display = '';
+      nx.innerHTML = '<h2>Up next · Week ' + esc(f.nextWeek) + '</h2>' + f.upNext.map(function (m) {
+        return '<div>' + esc(m.home ? m.home.name : '?') + ' <span>vs</span> ' + esc(m.away ? m.away.name : 'BYE') + '</div>';
+      }).join('');
+    } else nx.style.display = 'none';
   }
 
   /* ---------- gratitude ---------- */
@@ -801,7 +871,7 @@
     if ((view === 'photo' || view === 'quotes') && !albums[view].show()) return false;
     if (view === 'lunch' && !lunch) return false;
     if (view === 'weather' && !wxData) return false;
-    if (view === 'sports' && !sportsData.length) return false;
+    if (view === 'sports' && !(scoresData && (scoresData.games.length || scoresData.featured.length))) return false;
     if (view === 'fantasy' && !(fantasyData && fantasyData.league && fantasyData.matchups && fantasyData.matchups.length)) return false;
     if (view === 'gratitude' && !showNote()) return false;
     if (view === 'calendar') renderCalendar();

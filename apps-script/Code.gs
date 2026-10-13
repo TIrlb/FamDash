@@ -59,6 +59,7 @@ function defaultSettings_() {
       jarGoal: 100,
       jarTitle: 'Family jar',
       sportsTeams: [],
+      scoreLeagues: ['football/college-football', 'football/nfl', 'basketball/nba', 'baseball/mlb'],
       fantasyLeagueId: '1198389660'
   };
 }
@@ -271,6 +272,7 @@ function setSettings_(n) {
       return { league: t.league, id: String(t.id), name: String(t.name || '').slice(0, 60) };
     });
   }
+  if (Array.isArray(n.scoreLeagues)) st.scoreLeagues = n.scoreLeagues.filter(function (l) { return !!LEAGUES[l]; });
   if (typeof n.fantasyLeagueId === 'string' && /^\d*$/.test(n.fantasyLeagueId.trim())) {
     st.fantasyLeagueId = n.fantasyLeagueId.trim();
   }

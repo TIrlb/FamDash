@@ -188,7 +188,12 @@
       </div>
       <p class="note" style="margin-top:-6px">Combined mode adds everyone's marbles into one jar on the display. The +/− buttons above still track per kid, so you can switch back anytime.</p>
 
-      <h3>Teams to follow</h3>
+      <h3>Scores page</h3>
+      <p class="note" style="margin-top:0">Shows the day's top games from these leagues (live first, ranked and national-TV games next), plus last night's finals until 11am.</p>
+      <div id="scoreLeagueChecks"></div>
+
+      <h3>Favorite teams</h3>
+      <p class="note" style="margin-top:0">Featured on the Scores page the day before, the day of, and the morning after each game.</p>
       <div class="list" id="teamList"></div>
       <div class="card2" style="background:var(--card2)">
         <select id="tmLeague">
@@ -205,7 +210,7 @@
         <select id="tmTeam" size="6" style="display:none"></select>
         <button class="btn primary" id="tmAdd" style="display:none">Add team</button>
       </div>
-      <p class="note" style="margin-top:-4px">Adding or removing a team saves right away. Up to 10 teams; remove the out-of-season ones anytime.</p>
+      <p class="note" style="margin-top:-4px">Adding or removing a team saves right away. Up to 10 teams.</p>
 
       <h3>Fantasy football</h3>
       <div class="row2">
@@ -441,6 +446,8 @@
   };
 
   /* ---------- settings ---------- */
+  var LEAGUE_NAMES = { 'football/college-football': 'College football (Top 25)', 'football/nfl': 'NFL', 'basketball/mens-college-basketball': "Men's college basketball",
+    'basketball/womens-college-basketball': "Women's college basketball", 'basketball/nba': 'NBA', 'basketball/wnba': 'WNBA', 'baseball/mlb': 'MLB' };
   var VIEW_NAMES = { calendar: 'Calendar', jars: 'Marble jars', photo: 'Photo', lunch: 'Lunch menu', weather: 'Weather',
     sports: 'Scores', fantasy: 'Fantasy football', quotes: 'Quote wall', gratitude: 'Gratitude' };
 
@@ -451,7 +458,7 @@
   function anyDirty() { return dirty.kids || dirty.display || dirty.calendars; }
   function markDirty(k) { dirty[k] = true; refreshBar(); }
   $('kidSet').addEventListener('input', function () { markDirty('kids'); });
-  DISPLAY_FIELDS.concat(['viewChecks']).forEach(function (id) {
+  DISPLAY_FIELDS.concat(['viewChecks', 'scoreLeagueChecks']).forEach(function (id) {
     $(id).addEventListener('input', function () { markDirty('display'); });
     $(id).addEventListener('change', function () { markDirty('display'); });
   });
@@ -517,7 +524,8 @@
         }).then(function (r) { last = r; });
       });
       if (was.display) p = p.then(function () {
-        var st = { views: views, fantasyLeagueId: $('fantasyLeagueId').value.trim() };
+        var st = { views: views, fantasyLeagueId: $('fantasyLeagueId').value.trim(),
+          scoreLeagues: Array.prototype.map.call(document.querySelectorAll('#scoreLeagueChecks input:checked'), function (i) { return i.value; }) };
         DISPLAY_FIELDS.forEach(function (k) { if (k !== 'fantasyLeagueId') st[k] = $(k).value; });
         return F.post('setSettings', { settings: st });
       }).then(function (r) { last = r; });
@@ -559,6 +567,10 @@
     $('jarTitle').value = st.jarTitle || 'Family jar';
     $('jarGoal').value = st.jarGoal || 100;
     $('fantasyLeagueId').value = st.fantasyLeagueId || '';
+    var sl = Array.isArray(st.scoreLeagues) ? st.scoreLeagues : ['football/college-football', 'football/nfl', 'basketball/nba', 'baseball/mlb'];
+    $('scoreLeagueChecks').innerHTML = Object.keys(LEAGUE_NAMES).map(function (lg) {
+      return '<label class="check"><input type="checkbox" value="' + lg + '"' + (sl.indexOf(lg) >= 0 ? ' checked' : '') + '>' + LEAGUE_NAMES[lg] + '</label>';
+    }).join('');
     $('viewChecks').innerHTML = Object.keys(VIEW_NAMES).map(function (v) {
       return '<label class="check"><input type="checkbox" value="' + v + '"' + (st.views.indexOf(v) >= 0 ? ' checked' : '') + '>' + VIEW_NAMES[v] + ' in rotation</label>';
     }).join('');

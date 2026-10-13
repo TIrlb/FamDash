@@ -199,6 +199,34 @@
       { id: 3, name: 'End Zone Express', abbrev: 'EZE', owner: 'Nate', logo: 'https://g.espncdn.com/lm-static/ffl/images/default_logos/7.svg', wins: 2, losses: 2, ties: 0, pf: 470.9, seed: 3 },
       { id: 4, name: 'Fourth & Long', abbrev: 'FL', owner: 'Mom', logo: 'https://g.espncdn.com/lm-static/ffl/images/default_logos/12.svg', wins: 1, losses: 3, ties: 0, pf: 431.6, seed: 4 }
     ];
+    function g(lg, st, detail, a, h, extra) {
+      var T = function (x) { return { name: x[0], abbr: x[1], logo: LOGO(x[2]), rank: x[3] || null, score: x[4] != null ? String(x[4]) : null, winner: !!x[5], record: x[6] || '' }; };
+      return Object.assign({ id: lg + a[1] + h[1], league: lg, leagueShort: { 'football/college-football': 'CFB', 'football/nfl': 'NFL', 'basketball/nba': 'NBA', 'baseball/mlb': 'MLB' }[lg],
+        state: st, detail: detail, date: dayAt(0, 19, 0), away: T(a), home: T(h), tv: '' }, extra || {});
+    }
+    function DEMO_GAMES() {
+      return [
+        g('baseball/mlb', 'in', 'Top 7th', ['Dodgers', 'LAD', 'mlb/500/lad.png', null, 3], ['Brewers', 'MIL', 'mlb/500/mil.png', null, 2], { tv: 'TBS', note: 'NLCS · Game 3' }),
+        g('basketball/nba', 'in', '3rd 4:12', ['Bucks', 'MIL', 'nba/500/mil.png', null, 74], ['Bulls', 'CHI', 'nba/500/chi.png', null, 78], { tv: 'NBC Sports' }),
+        g('football/nfl', 'pre', '', ['Bills', 'BUF', 'nfl/500/buf.png', null, null, false, '4-1'], ['Chiefs', 'KC', 'nfl/500/kc.png', null, null, false, '4-1'], { date: dayAt(0, 20, 15), tv: 'ESPN' }),
+        g('baseball/mlb', 'pre', '', ['Guardians', 'CLE', 'mlb/500/cle.png'], ['Rays', 'TB', 'mlb/500/tb.png'], { date: dayAt(0, 20, 8), tv: 'FS1', note: 'ALCS · Game 3' }),
+        g('football/college-football', 'pre', '', ['Ohio State', 'OSU', 'ncaa/500/194.png', 2, null, false, '6-0'], ['Indiana', 'IU', 'ncaa/500/84.png', 9, null, false, '6-0'], { date: dayAt(0, 21, 0), tv: 'FOX' }),
+        g('basketball/nba', 'post', 'Final', ['Thunder', 'OKC', 'nba/500/okc.png', null, 112, true], ['Hawks', 'ATL', 'nba/500/atl.png', null, 104], { date: dayAt(-1, 19, 0), yesterday: true })
+      ];
+    }
+    function P(name, pos, pts, id) { return { name: name, pos: pos, pts: pts, img: id ? 'https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/' + id + '.png&w=96&h=70&cb=1' : '' }; }
+    function DEMO_FANTASY() {
+      var T = FANTASY_TEAMS;
+      return { league: 'Demo League', season: 2026, week: 5, final: true, nextWeek: 6,
+        high: { team: T[1], points: 157.6 },
+        matchups: [
+          { winner: 'AWAY', home: { team: T[0], points: 150.22, won: false, top: [P('J. Goff', 'QB', 28.9, 3046779), P('J. Myers', 'K', 23, 2473037), P('T. McBride', 'TE', 21.6, 4361307)] },
+            away: { team: T[1], points: 157.6, won: true, top: [P('J. Warren', 'RB', 36.8, 4569987), P('J. Burrow', 'QB', 24.6, 3915511), P('D. Adams', 'WR', 22.1, 16800)] } },
+          { winner: 'HOME', home: { team: T[2], points: 132.4, won: true, top: [P('J. Allen', 'QB', 31.2, 3918298), P('J. Chase', 'WR', 24.9, 4362628), P('Steelers', 'D/ST', 14, 0)] },
+            away: { team: T[3], points: 118.7, won: false, top: [P('S. Barkley', 'RB', 27.5, 3929630), P('A. St. Brown', 'WR', 19.3, 4374302), P('T. Kelce', 'TE', 12.4, 15847)] } }],
+        upNext: [{ home: T[1], away: T[3] }, { home: T[2], away: T[0] }],
+        standings: T };
+    }
     function photoSvg(p, i) {
       var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1067" viewBox="0 0 1600 1067">' +
         '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + p.grad[0] + '"/><stop offset="1" stop-color="' + p.grad[1] + '"/></linearGradient></defs>' +
@@ -230,11 +258,14 @@
           var d = SPORTS[t.league + ':' + t.id];
           return Object.assign({ league: t.league, leagueName: LEAGUE_NAMES[t.league], id: t.id, name: t.name, short: t.name, logo: '', record: '', last: null, next: null }, d || {});
         }) };
-        else if (action === 'fantasy') r = state.settings.fantasyLeagueId ? { ok: true, league: 'Demo League', season: 2026, week: 5,
-          matchups: [
-            { home: { team: FANTASY_TEAMS[0], points: 112.46, projected: 131.2 }, away: { team: FANTASY_TEAMS[2], points: 98.3, projected: 120.5 }, winner: 'UNDECIDED' },
-            { home: { team: FANTASY_TEAMS[1], points: 121.08, projected: 124.9 }, away: { team: FANTASY_TEAMS[3], points: 87.72, projected: 101.4 }, winner: 'UNDECIDED' }],
-          standings: FANTASY_TEAMS } : { ok: true, league: null };
+        else if (action === 'scores') {
+          var nd = SPORTS['football/college-football:87'], bulls = SPORTS['basketball/nba:4'];
+          r = { ok: true,
+            featured: [Object.assign({}, nd, { league: 'football/college-football', id: '87', game: Object.assign({}, nd.next, { date: dayAt(1, 19, 30) }), why: 'tomorrow' }),
+                       Object.assign({}, bulls, { league: 'basketball/nba', id: '4', game: bulls.live, why: 'live' })],
+            games: DEMO_GAMES() };
+        }
+        else if (action === 'fantasy') r = state.settings.fantasyLeagueId ? Object.assign({ ok: true }, DEMO_FANTASY()) : { ok: true, league: null };
         else if (action === 'lunch') r = { ok: true, name: 'October lunch.png',
           url: 'https://files.ecatholic.com/2970/pictures/2026/9/October%20lunch.png?t=1790092656000' };
         else if (action === 'photo') {
@@ -288,6 +319,13 @@
   function sports(list) {
     return demoOr('sports', {}, function () { return global.ESPN.sports(list).then(function (t) { return { ok: true, teams: t }; }); });
   }
+  function scores(leagues, favorites) {
+    return demoOr('scores', {}, function () {
+      return Promise.all([global.ESPN.topGames(leagues, favorites, 9), global.ESPN.featured(favorites)]).then(function (r) {
+        return { ok: true, games: r[0], featured: r[1] };
+      });
+    });
+  }
   function fantasy(leagueId) {
     return demoOr('fantasy', {}, function () { return global.ESPN.fantasy(leagueId).then(function (f) { return Object.assign({ ok: true }, f); }); });
   }
@@ -298,6 +336,7 @@
   global.FamDash = {
     get config() { return config; },
     sports: sports,
+    scores: scores,
     fantasy: fantasy,
     teams: teams,
     saveConfig: saveConfig,

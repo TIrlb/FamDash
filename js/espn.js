@@ -104,18 +104,159 @@
 
   function sports(list) { return Promise.all((list || []).map(summary)); }
 
-  // ESPN fantasy football, public league.
-  function fantasy(leagueId) {
-    if (!leagueId) return Promise.resolve({ league: null });
-    var now = new Date();
-    var season = now.getMonth() < 2 ? now.getFullYear() - 1 : now.getFullYear(); // NFL season runs into Jan/Feb
-    var url = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/' + season + '/segments/0/leagues/' +
-      encodeURIComponent(leagueId) + '?view=mTeam&view=mMatchupScore&view=mScoreboard&view=mSettings';
+  /* ---------- top games of the day (league scoreboards) ---------- */
+  var SHORT = { 'football/nfl': 'NFL', 'football/college-football': 'CFB', 'basketball/mens-college-basketball': 'MBB',
+    'basketball/womens-college-basketball': 'WBB', 'basketball/nba': 'NBA', 'basketball/wnba': 'WNBA', 'baseball/mlb': 'MLB' };
+  var PRO = { 'football/nfl': 1, 'basketball/nba': 1, 'basketball/wnba': 1, 'baseball/mlb': 1 };
+  var NATIONAL_TV = /^(ESPN|ESPN2|ABC|FOX|CBS|NBC|TNT|TBS|truTV|NFL Net|Prime Video|Peacock|NBC Sports|FS1|Big Ten Net|SECN|ACCN|ESPNU)$/i;
+  var CLOSE = { football: 8, basketball: 6, baseball: 2 };
+
+  function ymd(d) { return '' + d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2); }
+
+  function gameFromEvent(e, league) {
+    var c = (e.competitions || [])[0];
+    if (!c || !c.status) return null;
+    var comps = c.competitors || [];
+    function side(x) {
+      if (!x) return null;
+      var t = x.team || {};
+      var rank = x.curatedRank && x.curatedRank.current;
+      var rec = (x.records || [])[0];
+      return {
+        id: t.id, name: t.shortDisplayName || t.location || t.displayName, abbr: t.abbreviation,
+        logo: logoOf(t), rank: rank && rank <= 25 ? rank : null,
+        score: scoreOf(x.score), winner: x.winner === true, record: rec ? rec.summary : ''
+      };
+    }
+    var away = side(comps.filter(function (x) { return x.homeAway === 'away'; })[0] || comps[0]);
+    var home = side(comps.filter(function (x) { return x.homeAway === 'home'; })[0] || comps[1]);
+    var tvs = []; (c.broadcasts || []).forEach(function (b) { (b.names || []).forEach(function (n) { tvs.push(n); }); });
+    (c.geoBroadcasts || []).forEach(function (b) { if (b.media && b.media.shortName && b.market && b.market.type === 'National') tvs.push(b.media.shortName); });
+    return {
+      id: e.id, league: league, leagueShort: SHORT[league], date: e.date,
+      tbd: c.timeValid === false || e.timeValid === false,
+      state: c.status.type.state, detail: c.status.type.shortDetail, completed: !!c.status.type.completed,
+      tv: tvs[0] || '', national: tvs.some(function (t) { return NATIONAL_TV.test(t); }),
+      neutral: !!c.neutralSite, postseason: (e.season || {}).type === 3 || (c.type || {}).abbreviation === 'RD16',
+      note: ((c.notes || [])[0] || {}).headline || '',
+      away: away, home: home
+    };
+  }
+
+  // How interesting a game is: live and close beats ranked beats national TV beats the rest.
+  function interest(g, favIds) {
+    var s = 0, sport = g.league.split('/')[0];
+    if (g.state === 'in') s += 100;
+    if (PRO[g.league]) s += 12;
+    if (g.postseason) s += 25;
+    [g.away, g.home].forEach(function (t) {
+      if (!t) return;
+      if (t.rank) s += 30 - t.rank;
+      if (favIds[g.league + ':' + t.id]) s += 60;
+    });
+    if (g.away && g.home && g.away.rank && g.home.rank) s += 15;
+    if (g.national) s += 8;
+    if (g.state === 'in' && g.away && g.home && Math.abs((+g.away.score || 0) - (+g.home.score || 0)) <= (CLOSE[sport] || 5)) s += 15;
+    if (g.yesterday) s -= 20;
+    return s;
+  }
+
+  // Today's best games across the chosen leagues (plus last night's finals before 11am).
+  function topGames(leagues, favorites, limit) {
+    var now = new Date(), y = new Date(now.getTime() - 86400000);
+    var favIds = {};
+    (favorites || []).forEach(function (t) { favIds[t.league + ':' + t.id] = 1; });
+    var jobs = [];
+    (leagues || []).forEach(function (lg) {
+      if (!SHORT[lg]) return;
+      jobs.push(getJsonOrNull(SITE + lg + '/scoreboard?limit=300&dates=' + ymd(now)).then(function (j) { return { lg: lg, j: j, y: false }; }));
+      if (now.getHours() < 11) jobs.push(getJsonOrNull(SITE + lg + '/scoreboard?limit=300&dates=' + ymd(y)).then(function (j) { return { lg: lg, j: j, y: true }; }));
+    });
+    return Promise.all(jobs).then(function (rs) {
+      var perLeague = {};
+      rs.forEach(function (r) {
+        ((r.j && r.j.events) || []).forEach(function (e) {
+          var g = gameFromEvent(e, r.lg);
+          if (!g) return;
+          if (r.y && !g.completed) return;            // from yesterday, only finished games
+          g.yesterday = r.y;
+          g.score = interest(g, favIds);
+          (perLeague[r.lg] = perLeague[r.lg] || []).push(g);
+        });
+      });
+      var pool = [];
+      Object.keys(perLeague).forEach(function (lg) {
+        var seen = {};
+        perLeague[lg].sort(function (a, b) { return b.score - a.score; })
+          .filter(function (g) { if (seen[g.id]) return false; seen[g.id] = 1; return true; })
+          .slice(0, 4).forEach(function (g) { pool.push(g); });   // no single league crowds out the rest
+      });
+      pool.sort(function (a, b) {
+        var la = a.state === 'in' ? 0 : 1, lb = b.state === 'in' ? 0 : 1;
+        return la - lb || b.score - a.score || (a.date < b.date ? -1 : 1);
+      });
+      pool = pool.slice(0, limit || 9);
+      // show in a natural order: live, then upcoming by start time, then finals
+      var rank = { 'in': 0, 'pre': 1, 'post': 2 };
+      return pool.sort(function (a, b) { return (rank[a.state] - rank[b.state]) || (a.date < b.date ? -1 : 1); });
+    });
+  }
+
+  // Favorites worth featuring right now: playing today or tomorrow, live, or finished today
+  // (or last night, until noon).
+  function featured(list) {
+    return sports(list).then(function (teams) {
+      var now = new Date();
+      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      function dayDiff(iso) { var d = new Date(iso); return Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - today) / 86400000); }
+      return teams.filter(function (t) { return !t.error; }).map(function (t) {
+        var g = null, why = '';
+        if (t.live) { g = t.live; why = 'live'; }
+        else if (t.last && (dayDiff(t.last.date) === 0 || (dayDiff(t.last.date) === -1 && now.getHours() < 12))) { g = t.last; why = 'final'; }
+        else if (t.next && dayDiff(t.next.date) >= 0 && dayDiff(t.next.date) <= 1) { g = t.next; why = dayDiff(t.next.date) === 0 ? 'today' : 'tomorrow'; }
+        return g ? Object.assign({}, t, { game: g, why: why }) : null;
+      }).filter(Boolean);
+    });
+  }
+
+  /* ---------- ESPN fantasy football (public league) ---------- */
+  var FF = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/';
+  var POS = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K', 16: 'D/ST' };
+  var BENCH = { 20: 1, 21: 1, 24: 1 };   // bench, IR, (unused slot ids) never count as performers
+
+  function ffGet(url) {
     return fetch(url).then(function (r) {
       if (r.status === 401) throw new Error('fantasy league is private — make it public in ESPN league settings');
       if (!r.ok) throw new Error('ESPN fantasy ' + r.status);
       return r.json();
-    }).then(function (j) {
+    });
+  }
+
+  function topPerformers(side, n) {
+    var r = side && (side.rosterForCurrentScoringPeriod || side.rosterForMatchupPeriod);
+    if (!r || !r.entries) return [];
+    return r.entries.filter(function (e) { return !BENCH[e.lineupSlotId] && e.playerPoolEntry; })
+      .map(function (e) {
+        var p = e.playerPoolEntry.player || {};
+        var parts = String(p.fullName || '').split(' ');
+        var short = p.defaultPositionId === 16 ? p.fullName.replace(/ D\/ST$/, '') : (parts.length > 1 ? parts[0][0] + '. ' + parts.slice(1).join(' ') : p.fullName);
+        return {
+          name: short, full: p.fullName, pos: POS[p.defaultPositionId] || '',
+          pts: Math.round((e.playerPoolEntry.appliedStatTotal || 0) * 10) / 10,
+          img: p.id > 0 ? 'https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/' + p.id + '.png&w=96&h=70&cb=1' : ''
+        };
+      })
+      .sort(function (a, b) { return b.pts - a.pts; }).slice(0, n || 3);
+  }
+
+  // Shows the live week, except Tue/Wed when it holds last week's final results (ESPN rolls the
+  // week over right after Monday night, before anyone at breakfast has seen how it ended).
+  function fantasy(leagueId) {
+    if (!leagueId) return Promise.resolve({ league: null });
+    var now = new Date();
+    var season = now.getMonth() < 2 ? now.getFullYear() - 1 : now.getFullYear(); // NFL season runs into Jan/Feb
+    var base = FF + season + '/segments/0/leagues/' + encodeURIComponent(leagueId);
+    return ffGet(base + '?view=mTeam&view=mMatchupScore&view=mSettings').then(function (j) {
       var members = {};
       (j.members || []).forEach(function (m) { members[m.id] = m.firstName || m.displayName || ''; });
       var byId = {};
@@ -125,26 +266,54 @@
           id: t.id, name: t.name || ((t.location || '') + ' ' + (t.nickname || '')).trim(), abbrev: t.abbrev,
           logo: t.logo || '', owner: members[t.primaryOwner] || '',
           wins: o.wins || 0, losses: o.losses || 0, ties: o.ties || 0,
-          pf: Math.round((o.pointsFor || 0) * 10) / 10, seed: t.playoffSeed || 99
+          pf: Math.round((o.pointsFor || 0) * 10) / 10, seed: t.playoffSeed || 99,
+          streak: o.streakLength ? (o.streakType === 'WIN' ? 'W' : o.streakType === 'LOSS' ? 'L' : 'T') + o.streakLength : ''
         };
       });
-      var week = (j.status || {}).currentMatchupPeriod || j.scoringPeriodId;
-      function side(x) {
-        if (!x) return null;
-        var pts = x.totalPointsLive != null ? x.totalPointsLive : x.totalPoints;
+      var cur = (j.status || {}).currentMatchupPeriod || j.scoringPeriodId;
+      var sched = j.schedule || [];
+      function periodGames(p) { return sched.filter(function (m) { return m.matchupPeriodId === p; }); }
+      var dow = now.getDay();   // 2 = Tue, 3 = Wed
+      var prev = periodGames(cur - 1);
+      var holdPrev = (dow === 2 || dow === 3) && prev.length && prev.every(function (m) { return m.winner && m.winner !== 'UNDECIDED'; });
+      var week = holdPrev ? cur - 1 : cur;
+      var games = periodGames(week);
+      var final = games.length > 0 && games.every(function (m) { return m.winner && m.winner !== 'UNDECIDED'; });
+      var periods = ((j.settings || {}).scheduleSettings || {}).matchupPeriods || {};
+      var sp = (periods[week] || [week]).slice(-1)[0];
+      // Boxscore for that week: per-player points for the top-performer chips (best effort).
+      return ffGet(base + '?scoringPeriodId=' + sp + '&view=mBoxscore&view=mMatchupScore').catch(function () { return null; }).then(function (box) {
+        var boxBy = {};
+        ((box && box.schedule) || []).forEach(function (m) { if (m.matchupPeriodId === week) boxBy[m.id] = m; });
+        function side(m, which) {
+          var x = m[which];
+          if (!x) return null;
+          var pts = final ? x.totalPoints : (x.totalPointsLive != null ? x.totalPointsLive : x.totalPoints);
+          var bx = boxBy[m.id] && boxBy[m.id][which];
+          return {
+            team: byId[x.teamId],
+            points: Math.round((pts || 0) * 100) / 100,
+            projected: !final && x.totalProjectedPointsLive != null ? Math.round(x.totalProjectedPointsLive * 10) / 10 : null,
+            won: final && ((m.winner === 'HOME' && which === 'home') || (m.winner === 'AWAY' && which === 'away')),
+            top: topPerformers(bx, 3)
+          };
+        }
+        var matchups = games.map(function (m) { return { home: side(m, 'home'), away: side(m, 'away'), winner: m.winner }; });
+        var high = null;
+        matchups.forEach(function (m) { [m.home, m.away].forEach(function (x) { if (x && (!high || x.points > high.points)) high = x; }); });
+        var standings = Object.keys(byId).map(function (k) { return byId[k]; })
+          .sort(function (a, b) { return a.seed - b.seed || b.wins - a.wins || b.pf - a.pf; });
+        var upNext = holdPrev ? periodGames(cur).map(function (m) {
+          return { home: byId[m.home && m.home.teamId], away: m.away ? byId[m.away.teamId] : null };
+        }) : [];
         return {
-          team: byId[x.teamId],
-          points: Math.round((pts || 0) * 100) / 100,
-          projected: x.totalProjectedPointsLive != null ? Math.round(x.totalProjectedPointsLive * 10) / 10 : null
+          league: (j.settings || {}).name || 'Fantasy', season: season, week: week, final: final,
+          matchups: matchups, standings: standings, high: final && high ? { team: high.team, points: high.points } : null,
+          upNext: upNext, nextWeek: cur
         };
-      }
-      var matchups = (j.schedule || []).filter(function (m) { return m.matchupPeriodId === week; })
-        .map(function (m) { return { home: side(m.home), away: side(m.away), winner: m.winner }; });
-      var standings = Object.keys(byId).map(function (k) { return byId[k]; })
-        .sort(function (a, b) { return a.seed - b.seed || b.wins - a.wins || b.pf - a.pf; });
-      return { league: (j.settings || {}).name || 'Fantasy', season: season, week: week, matchups: matchups, standings: standings };
+      });
     });
   }
 
-  global.ESPN = { LEAGUES: LEAGUES, teams: teams, sports: sports, fantasy: fantasy };
+  global.ESPN = { LEAGUES: LEAGUES, SHORT: SHORT, teams: teams, sports: sports, fantasy: fantasy, topGames: topGames, featured: featured };
 })(window);
