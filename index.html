@@ -696,7 +696,7 @@
       $('ffBenchCard').style.display = '';
       $('ffBench').innerHTML = '<span class="hs"' + (p.img ? ' style="background-image:url(\'' + esc(p.img) + '\')"' : '') + '></span>' +
         '<div><div class="bn">' + esc(p.name) + ' <b>' + p.pts.toFixed(1) + '</b></div>' +
-        '<div class="bd">' + esc(p.pos) + ' on ' + esc(t.owner || t.name) + '\'s bench' +
+        '<div class="bd">' + esc(p.pos) + ' on <b style="color:var(--ink)">' + esc(t.name) + '</b>\'s bench' + (t.owner ? ' (' + esc(t.owner) + ')' : '') +
         (p.cost > 0 ? '<br>Started ' + esc(p.over.name) + ' instead · <em>−' + p.cost.toFixed(1) + ' pts</em>' : '') + '</div></div>';
     } else $('ffBenchCard').style.display = 'none';
     var nx = $('ffNext');
