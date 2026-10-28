@@ -232,6 +232,19 @@
   .ff-next div { font-size: 2.2vh; font-weight: 700; padding: .7vh 0; border-top: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ff-next div span { color: var(--muted); }
 
+  /* today: national days + on this day */
+  #v-today .body { display: grid; grid-template-columns: 1fr 1.35fr; gap: 2.6vw; }
+  .td-days { padding: 2.4vh 1.8vw; display: flex; flex-direction: column; gap: 1.3vh; align-self: start; max-height: 100%; overflow: hidden; }
+  .td-days h2, .td-hist h2 { font-size: 2.3vh; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; margin-bottom: .4vh; }
+  .td-day { font-family: 'Fredoka', sans-serif; font-weight: 500; line-height: 1.15; padding: .8vh 0 .8vh 1.2vw; border-left: .6vh solid var(--warm); }
+  .td-day:nth-child(3n+2) { border-left-color: #7cc4ff; } .td-day:nth-child(3n) { border-left-color: #5fd38d; }
+  .td-hist { display: flex; flex-direction: column; gap: 1.8vh; min-height: 0; }
+  .td-ev { display: flex; gap: 1.4vw; padding: 1.8vh 1.4vw; align-items: center; min-height: 0; }
+  .td-ev .yr { font-family: 'Fredoka', sans-serif; font-size: 5vh; font-weight: 600; color: var(--warm); line-height: 1; }
+  .td-ev .ago { font-size: 1.8vh; color: var(--muted); font-weight: 700; margin-top: .4vh; }
+  .td-ev .tx { font-size: 2.4vh; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin-top: .8vh; }
+  .td-ev .th { width: 14vh; height: 14vh; border-radius: 1.2vh; background: rgba(255,255,255,.06) center / cover no-repeat; flex: none; }
+
   /* quotes (same frame as photos) */
   #v-quotes { padding: 0; background: #000; }
   #v-quotes .blur { position: absolute; top: -40px; right: -40px; bottom: -40px; left: -40px; background-size: cover; background-position: center; filter: blur(32px) brightness(.45); }
@@ -317,6 +330,14 @@
   </div>
 </section>
 
+<section class="view page" id="v-today">
+  <h1 id="tdTitle">Today</h1>
+  <div class="body">
+    <div class="td-days card" id="tdDays"></div>
+    <div class="td-hist"><h2>On this day</h2><div id="tdHist" style="display:flex;flex-direction:column;gap:1.8vh"></div></div>
+  </div>
+</section>
+
 <section class="view" id="v-quotes">
   <div class="blur" id="quoteBlur"></div>
   <img id="quoteImg" alt="">
@@ -362,9 +383,10 @@
 
   var state = null, events = [];
   var wxData = null, scoresData = null, fantasyData = null, notes = [];
+  var todayData = null;           // {date, days: [...], events: [...]}
   var DEFAULT_SCORE_LEAGUES = ['football/college-football', 'football/nfl', 'basketball/nba', 'baseball/mlb'];
   var shownCounts = {};           // marble counts last drawn on the jar view
-  var views = ['calendar', 'jars', 'photo', 'lunch', 'weather', 'sports', 'fantasy', 'quotes', 'gratitude'];
+  var views = ['calendar', 'jars', 'photo', 'lunch', 'weather', 'sports', 'fantasy', 'quotes', 'gratitude', 'today'];
   var lunch = null;               // {url, name} once the image has actually loaded
   var lunchImg = null;
   var current = null, idx = -1, timer = null, holding = false;
@@ -898,6 +920,61 @@
     } else nx.style.display = 'none';
   }
 
+  /* ---------- today: "national ___ day" (backend, from Checkiday) + on this day (Wikipedia) ---------- */
+  // Wikipedia's featured "selected" events include wars and disasters; keep the wall kid-friendly.
+  var GRIM = /\b(kill|killed|killing|dead|death|deaths|die[sd]?|dying|murder|massacr|shoot|shooting|shot|bomb|terror|attack|assassinat|war\b|wars\b|warfare|invasion|invade|execut|genocide|hostage|riot|crash|disaster|earthquake|explo[ds]|sank|sink|sunk|hang(ed)?\b|lynch|rape|abuse|slave|holocaust|nazi|casualt|wound|battle|siege|coup|suicide|famine|plague|epidemic|pandemic|fire\b|burn|injur|victim|tragedy|prison|arrest|guerrilla|militant|insurg|rebel|soldier|troops|army|missile|nuclear|weapon|gun)/i;
+  function todayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function loadToday() {
+    var key = todayKey();
+    if (todayData && todayData.date === key && todayData.complete) return Promise.resolve();
+    var d = new Date(), mm = ('0' + (d.getMonth() + 1)).slice(-2), dd = ('0' + d.getDate()).slice(-2);
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('famdash.today') || 'null'); } catch (e) {}
+    if (cached && cached.date === key && cached.complete) { todayData = cached; return Promise.resolve(); }
+    var base = 'https://en.wikipedia.org/api/rest_v1/feed/onthisday/';
+    function wiki(kind) { return fetch(base + kind + '/' + mm + '/' + dd).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }); }
+    function safe(list) {
+      return (list || []).filter(function (e) { return e.text && e.year && !GRIM.test(e.text); }).map(function (e) {
+        var pg = (e.pages || []).filter(function (p) { return p.thumbnail && p.thumbnail.source; })[0];
+        return { year: e.year, text: e.text, img: pg ? pg.thumbnail.source : '' };
+      });
+    }
+    var days = F.get('today').then(function (r) { return r.days || []; }).catch(function () { return null; });
+    return Promise.all([days, wiki('selected')]).then(function (r) {
+      var events = safe(r[1].selected);
+      var more = events.length >= 4 ? Promise.resolve([]) : wiki('events').then(function (j) { return safe(j.events); });
+      return more.then(function (m) {
+        var seen = {};
+        events = events.concat(m).filter(function (e) { var k = e.year + e.text.slice(0, 30); if (seen[k]) return false; seen[k] = 1; return true; });
+        // "National ___ Day" first, then the rest
+        var dl = (r[0] || []).slice().sort(function (a, b) { return (/^National /.test(b) ? 1 : 0) - (/^National /.test(a) ? 1 : 0); });
+        todayData = { date: key, days: dl, events: events, complete: r[0] !== null && events.length > 0 };
+        try { localStorage.setItem('famdash.today', JSON.stringify(todayData)); } catch (e) {}
+        if (current === 'today') renderToday();
+      });
+    });
+  }
+  var TKEY = 'famdash.todayIdx';
+  function renderToday(advance) {
+    var t = todayData; if (!t) return;
+    var days = t.days.slice(0, 9);
+    var size = days.length <= 4 ? 4 : days.length <= 6 ? 3.4 : 2.8;
+    $('tdDays').innerHTML = '<h2>Today is…</h2>' + (days.length ? days.map(function (d) {
+      return '<div class="td-day" style="font-size:' + size + 'vh">' + esc(d) + '</div>';
+    }).join('') : '<div class="td-day" style="font-size:3vh">' + new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }) + '</div>');
+    $('tdTitle').innerHTML = 'Happy <span>' + new Date().toLocaleDateString([], { weekday: 'long' }) + '</span>';
+    // three events per visit, rotating through the day's list
+    var ev = t.events, i = 0;
+    try { i = Number(localStorage.getItem(TKEY) || 0) || 0; } catch (e) {}
+    if (advance) { i = (i + 3) % Math.max(1, ev.length); try { localStorage.setItem(TKEY, String(i)); } catch (e) {} }
+    var pick = ev.length <= 3 ? ev : [ev[i % ev.length], ev[(i + 1) % ev.length], ev[(i + 2) % ev.length]];
+    var nowY = new Date().getFullYear();
+    $('tdHist').innerHTML = pick.map(function (e) {
+      return '<div class="td-ev card">' + (e.img ? '<div class="th" style="background-image:url(\'' + esc(e.img) + '\')"></div>' : '') +
+        '<div><div class="yr">' + esc(e.year) + '</div><div class="ago">' + (nowY - e.year) + ' years ago</div><div class="tx">' + esc(e.text) + '</div></div></div>';
+    }).join('');
+  }
+
   /* ---------- gratitude ---------- */
   var GKEY = 'famdash.lastNote';
   function showNote() {
@@ -1082,6 +1159,8 @@
     if (view === 'sports' && !(scoresData && (scoresData.games.length || scoresData.featured.length))) return false;
     if (view === 'fantasy' && !(fantasyData && fantasyData.league && fantasyData.matchups && fantasyData.matchups.length)) return false;
     if (view === 'gratitude' && !showNote()) return false;
+    if (view === 'today' && !(todayData && (todayData.days.length || todayData.events.length))) return false;
+    if (view === 'today') { if (todayData.date !== todayKey()) loadToday(); renderToday(true); }
     if (view === 'calendar') renderCalendar();
     if (view === 'jars') renderJars();
     var sections = document.querySelectorAll('.view');
@@ -1173,7 +1252,7 @@
 
   /* ---------- boot ---------- */
   Promise.all([loadState().then(function () { return Promise.all([loadSports(), loadFantasy()]); }),
-    loadEvents(), albums.photo.loadList(), albums.quotes.loadList(), loadLunch(), loadWeather(), loadNotes()]).then(function () {
+    loadEvents(), albums.photo.loadList(), albums.quotes.loadList(), loadLunch(), loadWeather(), loadNotes(), loadToday()]).then(function () {
     if (state) {
       state.kids.forEach(function (k) { shownCounts[k.id] = k.count; });
       F.listen(state.ntfyTopic, onMessage);
@@ -1188,6 +1267,7 @@
   setInterval(loadSports, 3 * 60000);
   setInterval(loadFantasy, 3 * 60000);
   setInterval(loadNotes, 10 * 60000);
+  setInterval(loadToday, 30 * 60000);   // picks up the new day (and retries if a source was down)
 })();
 </script>
 </body>

@@ -5,7 +5,7 @@
  * Run setup() once from the editor first; it creates the token, ntfy topic,
  * photo folder and default state, and logs what you need.
  *
- * GET  ?action=state|events|calendars|photos|photo|lunch|gratitude&token=...
+ * GET  ?action=state|events|calendars|photos|photo|lunch|gratitude|today&token=...
  * POST {token, action: adjust|setKid|setSettings|setCalendars|upload|deletePhoto|addGratitude|deleteGratitude, ...}
  *      (sent as text/plain so the browser skips the CORS preflight)
  */
@@ -32,7 +32,7 @@ function setup() {
   Logger.log('Quote folder: https://drive.google.com/drive/folders/' + PROPS.getProperty('QUOTE_FOLDER_ID'));
 }
 
-const ALL_VIEWS = ['calendar', 'jars', 'photo', 'lunch', 'weather', 'sports', 'fantasy', 'quotes', 'gratitude'];
+const ALL_VIEWS = ['calendar', 'jars', 'photo', 'lunch', 'weather', 'sports', 'fantasy', 'quotes', 'gratitude', 'today'];
 
 function defaultState_() {
   return {
@@ -119,6 +119,7 @@ function doGet(e) {
       case 'calendars': return json_({ ok: true, calendars: calendars_() });
       case 'photos': return json_({ ok: true, photos: photos_(p.kind) });
       case 'gratitude': return json_({ ok: true, notes: gratitude_() });
+      case 'today': return json_(Object.assign({ ok: true }, today_()));
       case 'lunch': return json_(Object.assign({ ok: true }, lunch_(p.fresh === '1')));
       case 'photo': return json_(Object.assign({ ok: true }, photo_(p.id)));
       default: return json_({ ok: false, error: 'unknown action' });
@@ -456,3 +457,32 @@ const LEAGUES = {
   'basketball/wnba': 'WNBA',
   'baseball/mlb': 'MLB'
 };
+
+/* ---------- "Today is National ___ Day" (Checkiday's public daily RSS; no key, no CORS so it's fetched here) ---------- */
+
+const NOT_FOR_KIDS = /beer|wine|vodka|whiske?y|bourbon|tequila|\brum\b|margarita|cocktail|martini|champagne|mimosa|sangria|liquor|booze|hangover|cannabis|marijuana|weed|cigar|tobacco|\bsex|lingerie|underwear|boxer|\bbra\b|nude|naked|gambl|casino|hooters/i;
+const NOT_US = /\((UK|Australia|Canada|Ireland|India|Scotland|Wales|NZ|New Zealand|Philippines|South Africa|Japan|Mexico|Germany|France)\)/i;
+
+function today_() {
+  const tz = Session.getScriptTimeZone() || 'America/Indiana/Indianapolis';
+  const key = 'days:' + Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const cache = CacheService.getScriptCache();
+  const hit = cache.get(key);
+  if (hit) return JSON.parse(hit);
+  let days = [];
+  try {
+    const r = UrlFetchApp.fetch('https://www.checkiday.com/rss.php', { muteHttpExceptions: true, followRedirects: true });
+    if (r.getResponseCode() === 200) {
+      const xml = r.getContentText();
+      const re = /<item>[\s\S]*?<title>([\s\S]*?)<\/title>/g;
+      let m;
+      while ((m = re.exec(xml))) {
+        const t = m[1].replace(/<!\[CDATA\[|\]\]>/g, '').replace(/&amp;/g, '&').replace(/&#0?39;/g, "'").replace(/&quot;/g, '"').trim();
+        if (t && !NOT_FOR_KIDS.test(t) && !NOT_US.test(t)) days.push(t);
+      }
+    }
+  } catch (e) { /* leave days empty; the display still shows history */ }
+  const out = { days: days.slice(0, 14) };
+  cache.put(key, JSON.stringify(out), days.length ? 21600 : 600);   // 6h when good, retry in 10 min when empty
+  return out;
+}

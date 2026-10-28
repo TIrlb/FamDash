@@ -95,7 +95,7 @@
     };
     if (state.settings.views.indexOf('lunch') < 0 && !state.lunchSeen) { state.settings.views.push('lunch'); state.lunchSeen = true; }
     if (!state.settings.lunchUrl) state.settings.lunchUrl = 'https://stpiuscatholicschool.net/lunch';
-    var ALL = ['calendar', 'jars', 'photo', 'lunch', 'weather', 'sports', 'fantasy', 'quotes', 'gratitude'];
+    var ALL = ['calendar', 'jars', 'photo', 'lunch', 'weather', 'sports', 'fantasy', 'quotes', 'gratitude', 'today'];
     var seenV = state.settings.seenViews || ['calendar', 'jars', 'photo', 'lunch'];
     ALL.forEach(function (v) { if (seenV.indexOf(v) < 0) { seenV.push(v); if (state.settings.views.indexOf(v) < 0) state.settings.views.push(v); } });
     state.settings.seenViews = seenV;
@@ -254,6 +254,7 @@
           }) };
         else if (action === 'photos') r = { ok: true, photos: (p.kind === 'quotes' ? quotes : photos).map(function (x) { return { id: x.id }; }) };
         else if (action === 'gratitude') r = { ok: true, notes: state.gratitude.slice() };
+        else if (action === 'today') r = { ok: true, days: ['National Potato Day', 'National Civics Day', 'National Parmigiano Reggiano Day', 'Navy Day', 'Cranky Co-Workers Day', 'Vote Early Day'] };
         else if (action === 'teams') r = { ok: true, teams: (DEMO_TEAMS[p.league] || []).map(function (t) { return { id: t[0], name: t[1] }; }) };
         else if (action === 'sports') r = { ok: true, teams: state.settings.sportsTeams.map(function (t) {
           var d = SPORTS[t.league + ':' + t.id];
