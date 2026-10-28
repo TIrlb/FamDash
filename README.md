@@ -8,7 +8,7 @@ Family wall dashboard for an old tablet, driven from a phone controller. It cycl
 | Marble jars | Backend state; 1–4 kids side by side, or one combined family jar |
 | Photo | Drive folder "FamDash Photos" |
 | Lunch menu | School lunch flyer, split into this week's days (Mon–Wed over Thu–Fri + daily options) by detecting the flyer's grid; full month if the grid isn't found |
-| Weather | Open-Meteo (now, 10-hour, 5-day) + the NWS radar loop for the family's ZIP code |
+| Weather | National Weather Service api.weather.gov (now, 10-hour, 5-day; US only, public domain) + the NWS radar loop for the family's ZIP code |
 | Scores | ESPN scoreboards: the day's top games in the chosen leagues (+ last night's finals before 11am); favorite teams featured the day before, day of, and morning after their games |
 | Fantasy | ESPN fantasy API (public league): matchups with each roster's top 3 performers, standings; holds last week's finals on Tue/Wed |
 | Quote wall | Drive folder "FamDash Quotes" |

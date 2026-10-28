@@ -719,7 +719,7 @@
   }
   window.addEventListener('resize', fitLunch);
 
-  /* ---------- weather (Open-Meteo: free, no key, CORS-enabled) ---------- */
+  /* ---------- weather (National Weather Service api.weather.gov: free, no key, CORS, US only) ---------- */
   // Location comes from the controller's ZIP lookup (settings.location); no location = no weather.
   function wxLoc() { return state && state.settings && state.settings.location; }
   function wxUnits() { return (state && state.settings && state.settings.units) === 'C' ? 'C' : 'F'; }
@@ -750,25 +750,98 @@
     61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 66: 'Freezing rain', 67: 'Freezing rain',
     71: 'Light snow', 73: 'Snow', 75: 'Heavy snow', 77: 'Snow grains', 80: 'Showers', 81: 'Showers', 82: 'Heavy showers',
     85: 'Snow showers', 86: 'Snow showers', 95: 'Thunderstorms', 96: 'Thunderstorms', 99: 'Thunderstorms' };
+  // NWS icon URLs name the conditions ("…/land/day/rain_showers,20/sct?size=small"); map the
+  // most significant one onto the WMO-style codes the icons and renderer already use.
+  var NWS_CODES = [
+    [/tsra|tornado|hurricane|tropical/, 95], [/blizzard|snow/, 73], [/fzra|sleet|ice/, 66],
+    [/rain_showers/, 80], [/rain/, 63], [/fog|haze|smoke|dust/, 45],
+    [/ovc|bkn/, 3], [/sct/, 2], [/few/, 1], [/skc|hot|cold/, 0]];
+  function nwsCode(iconUrl) {
+    var parts = String(iconUrl || '').split('?')[0].split('/').slice(6);   // after …/land/day/
+    var path = parts.join('/');
+    for (var i = 0; i < NWS_CODES.length; i++) if (NWS_CODES[i][0].test(path)) return NWS_CODES[i][1];
+    return 3;
+  }
+  function firstNum(s) { var m = /\d+/.exec(String(s || '')); return m ? +m[0] : 0; }
+  // NWS gives no "feels like" in the simple forecast; use the standard wind chill / heat index.
+  function feelsLike(t, rh, wind, C) {
+    var f = C ? t * 9 / 5 + 32 : t, mph = C ? wind / 1.609 : wind, r = f;
+    if (f <= 50 && mph > 3) r = 35.74 + 0.6215 * f - 35.75 * Math.pow(mph, 0.16) + 0.4275 * f * Math.pow(mph, 0.16);
+    else if (f >= 80 && rh != null) r = -42.379 + 2.04901523 * f + 10.14333127 * rh - 0.22475541 * f * rh - 0.00683783 * f * f -
+      0.05481717 * rh * rh + 0.00122874 * f * f * rh + 0.00085282 * f * rh * rh - 0.00000199 * f * f * rh * rh;
+    return C ? (r - 32) * 5 / 9 : r;
+  }
+  // /points/{lat},{lon} → this location's forecast URLs; cached because it never changes.
+  function nwsPoint(loc) {
+    var key = loc.lat + ',' + loc.lon, c = null;
+    try { c = JSON.parse(localStorage.getItem('famdash.nws') || 'null'); } catch (e) {}
+    if (c && c.key === key) return Promise.resolve(c);
+    return fetch('https://api.weather.gov/points/' + (+loc.lat).toFixed(4) + ',' + (+loc.lon).toFixed(4))
+      .then(function (r) { if (!r.ok) throw new Error('points ' + r.status); return r.json(); })
+      .then(function (j) {
+        var o = { key: key, daily: j.properties.forecast, hourly: j.properties.forecastHourly };
+        try { localStorage.setItem('famdash.nws', JSON.stringify(o)); } catch (e) {}
+        return o;
+      });
+  }
+  function getJson(url) {
+    return fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+  }
+  // Reshape NWS hourly + 12-hour periods into { current, hourly, daily } arrays.
+  function nwsToWx(hourly, twelve, C) {
+    var hp = hourly.properties.periods, dp = twelve.properties.periods;
+    if (!hp.length) return null;
+    var h = { time: [], temperature_2m: [], weather_code: [], precipitation_probability: [], is_day: [] };
+    var byDate = {}, dates = [];
+    function bucket(d) { if (!byDate[d]) { byDate[d] = { hi: null, lo: null, hmax: -999, hmin: 999, pop: 0, code: null, ncode: null }; dates.push(d); } return byDate[d]; }
+    hp.forEach(function (p) {
+      var pop = (p.probabilityOfPrecipitation && p.probabilityOfPrecipitation.value) || 0, code = nwsCode(p.icon);
+      h.time.push(p.startTime.slice(0, 16)); h.temperature_2m.push(p.temperature); h.weather_code.push(code);
+      h.precipitation_probability.push(pop); h.is_day.push(p.isDaytime ? 1 : 0);
+      var b = bucket(p.startTime.slice(0, 10));
+      b.hmax = Math.max(b.hmax, p.temperature); b.hmin = Math.min(b.hmin, p.temperature);
+    });
+    // 12-hour periods: the day period gives the high and the icon, the night after it the low.
+    dp.forEach(function (p) {
+      var b = bucket(p.startTime.slice(0, 10)), pop = (p.probabilityOfPrecipitation && p.probabilityOfPrecipitation.value) || 0;
+      b.pop = Math.max(b.pop, pop);
+      if (p.isDaytime) { b.hi = p.temperature; b.code = nwsCode(p.icon); }
+      else { b.lo = p.temperature; b.ncode = nwsCode(p.icon); }
+    });
+    dates.sort();
+    var d = { time: [], temperature_2m_max: [], temperature_2m_min: [], weather_code: [], precipitation_probability_max: [] };
+    dates.forEach(function (k) {
+      var b = byDate[k], hi = b.hi != null ? b.hi : b.hmax, lo = b.lo != null ? b.lo : b.hmin;
+      if (hi === -999 || lo === 999 || (b.code == null && b.ncode == null)) return;
+      d.time.push(k); d.temperature_2m_max.push(Math.max(hi, lo)); d.temperature_2m_min.push(Math.min(hi, lo));
+      d.weather_code.push(b.code != null ? b.code : b.ncode); d.precipitation_probability_max.push(b.pop);
+    });
+    var n = hp[0], wind = firstNum(n.windSpeed), rh = n.relativeHumidity ? n.relativeHumidity.value : null;
+    return {
+      current: { temperature_2m: n.temperature, apparent_temperature: feelsLike(n.temperature, rh, wind, C), weather_code: nwsCode(n.icon),
+        is_day: n.isDaytime ? 1 : 0, wind_speed_10m: wind, desc: n.shortForecast },
+      hourly: h, daily: d };
+  }
   function loadWeather() {
     var loc = wxLoc();
     if (!loc) { wxData = null; $('wx').innerHTML = ''; return Promise.resolve(); }
-    var C = wxUnits() === 'C';
-    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + loc.lat + '&longitude=' + loc.lon +
-      '&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m' +
-      '&hourly=temperature_2m,weather_code,precipitation_probability,is_day' +
-      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
-      (C ? '&temperature_unit=celsius&wind_speed_unit=kmh' : '&temperature_unit=fahrenheit&wind_speed_unit=mph') + '&timezone=auto&forecast_days=6';
-    return fetch(url).then(function (r) { return r.json(); }).then(function (j) {
-      var c = j.current;
-      if (!c) return;
+    var C = wxUnits() === 'C', q = C ? '?units=si' : '?units=us';
+    return nwsPoint(loc).then(function (pt) {
+      return Promise.all([getJson(pt.hourly + q), getJson(pt.daily + q)]).catch(function (e) {
+        try { localStorage.removeItem('famdash.nws'); } catch (x) {}   // grid can move; look it up again next time
+        throw e;
+      });
+    }).then(function (r) {
+      var j = nwsToWx(r[0], r[1], C);
+      if (!j || !j.daily.time.length) return;
       wxData = j;
+      var c = j.current;
       $('wx').innerHTML = icon(c.weather_code, c.is_day === 1) + '<span>' + Math.round(c.temperature_2m) + '°</span>';
       if (current === 'weather') renderWeather();
     }).catch(function () { /* keep the last reading; weather is decoration */ });
   }
 
-  // Open-Meteo returns local wall-clock strings ("2026-10-12T14:00") because of timezone=auto.
+  // Times are the location's wall clock ("2026-10-28T15:00"); offsets are dropped on purpose.
   function localDate(str) { var p = str.split(/[-T:]/); return new Date(+p[0], p[1] - 1, +p[2], +(p[3] || 0), +(p[4] || 0)); }
 
   function renderWeather() {
@@ -776,7 +849,7 @@
     var c = j.current, d = j.daily, h = j.hourly;
     $('wxNow').innerHTML = icon(c.weather_code, c.is_day === 1) +
       '<div><div class="big">' + Math.round(c.temperature_2m) + '°</div></div>' +
-      '<div><div class="desc">' + (WX_WORDS[c.weather_code] || '') + '</div>' +
+      '<div><div class="desc">' + esc(c.desc || WX_WORDS[c.weather_code] || '') + '</div>' +
       '<div class="meta">Feels like ' + Math.round(c.apparent_temperature) + '° · Wind ' + Math.round(c.wind_speed_10m) + (wxUnits() === 'C' ? ' km/h' : ' mph') + '</div>' +
       '<div class="meta">High ' + Math.round(d.temperature_2m_max[0]) + '° · Low ' + Math.round(d.temperature_2m_min[0]) + '°</div></div>';
 
