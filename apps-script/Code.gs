@@ -529,7 +529,7 @@ function today_() {
   if (hit) return JSON.parse(hit);
   let days = [], current = false;
   try {
-    const r = UrlFetchApp.fetch('https://www.checkiday.com/rss.php', { muteHttpExceptions: true, followRedirects: true });
+    const r = UrlFetchApp.fetch('https://api.checkiday.com/rss', { muteHttpExceptions: true, followRedirects: true });
     if (r.getResponseCode() === 200) {
       const xml = r.getContentText();
       // Checkiday rolls over at midnight Central; only trust the feed once its date matches ours.

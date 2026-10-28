@@ -234,24 +234,29 @@
   .ff-next div { font-size: 2.2vh; font-weight: 700; padding: .7vh 0; border-top: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ff-next div span { color: var(--muted); }
 
-  /* today: national days + on this day */
-  #v-today .body { display: grid; grid-template-columns: 1fr 1.3fr; gap: 2.6vw; align-items: center; }
-  .td-big { display: flex; flex-direction: column; overflow: hidden; max-height: 100%; }
-  .td-big .ph { height: 34vh; width: 100%; object-fit: contain; background: rgba(0,0,0,.25); flex: none; display: block; }
-  .td-big .in { padding: 2.2vh 1.8vw 2.6vh; }
-  .td-big .yr { font-family: 'Fredoka', sans-serif; font-size: 6.4vh; font-weight: 600; color: var(--warm); line-height: 1; }
-  .td-big .yr small { font: 700 2.2vh 'Nunito', sans-serif; color: var(--muted); margin-left: 1vw; }
-  .td-big .tx { font-size: 3vh; font-weight: 700; line-height: 1.3; margin-top: 1.2vh; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
-  .td-days { padding: 2.4vh 1.8vw; display: flex; flex-direction: column; gap: 1.3vh; align-self: start; max-height: 100%; overflow: hidden; }
-  .td-days h2, .td-hist h2 { font-size: 2.3vh; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; margin-bottom: .4vh; }
-  .td-day { font-family: 'Fredoka', sans-serif; font-weight: 500; line-height: 1.15; padding: .8vh 0 .8vh 1.2vw; border-left: .6vh solid var(--warm); }
-  .td-day:nth-child(3n+2) { border-left-color: #7cc4ff; } .td-day:nth-child(3n) { border-left-color: #5fd38d; }
-  .td-hist { display: flex; flex-direction: column; gap: 1.8vh; min-height: 0; }
-  .td-ev { display: flex; gap: 1.4vw; padding: 1.8vh 1.4vw; align-items: center; min-height: 0; }
-  .td-ev .yr { font-family: 'Fredoka', sans-serif; font-size: 5vh; font-weight: 600; color: var(--warm); line-height: 1; }
-  .td-ev .ago { font-size: 1.8vh; color: var(--muted); font-weight: 700; margin-top: .4vh; }
-  .td-ev .tx { font-size: 2.4vh; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin-top: .8vh; }
-  .td-ev .th { width: 14vh; height: 14vh; border-radius: 1.2vh; background: rgba(255,255,255,.06) center / cover no-repeat; flex: none; }
+  /* today: one sports moment + one history event, one national day along the bottom */
+  #v-today > h1 { margin-bottom: 3vh; }
+  .td-body { display: grid; grid-template-columns: 1fr 1fr; gap: 2.4vw; }
+  .td-body.solo { grid-template-columns: 1fr; padding: 0 14vw; }
+  .td-col { display: flex; flex-direction: column; gap: 1.4vh; min-height: 0; }
+  .td-col h2 { font-size: 2.3vh; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; }
+  .td-col > div { flex: 1; min-height: 0; display: flex; }
+  .td-big { display: flex; flex-direction: column; overflow: hidden; flex: 1; min-height: 0; }
+  .td-big .ph { flex: 1; min-height: 0; width: 100%; object-fit: contain; background: rgba(0,0,0,.25); display: block; }
+  .td-big .in { padding: 1.8vh 1.6vw 2.2vh; flex: none; }
+  .td-big.np { justify-content: center; }
+  .td-big.np .in { padding: 4vh 2.4vw; }
+  .td-big.np .yr { font-size: 8vh; }
+  .td-big.np .tx { font-size: 3.8vh; -webkit-line-clamp: 6; }
+  .td-big .yr { font-family: 'Fredoka', sans-serif; font-size: 5.4vh; font-weight: 600; color: var(--warm); line-height: 1; }
+  .td-big .yr small { font: 700 2.1vh 'Nunito', sans-serif; color: var(--muted); margin-left: 1vw; }
+  .td-big .tx { font-size: 2.7vh; font-weight: 700; line-height: 1.3; margin-top: 1vh; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .td-foot { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 2vw; margin: 2.4vh 0 4.4vh; }
+  .td-banner { font-family: 'Fredoka', sans-serif; font-size: 4vh; font-weight: 500; line-height: 1.1; padding: 1.2vh 1.6vw; border-left: .7vh solid var(--warm);
+    background: rgba(255,255,255,.05); border-radius: 0 1.4vh 1.4vh 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .td-banner:empty { visibility: hidden; }
+  .td-banner span { color: var(--warm); }
+  .td-credit { font-size: 1.7vh; color: var(--muted); font-weight: 700; white-space: nowrap; flex: none; opacity: .7; }
 
   /* quotes (same frame as photos) */
   #v-quotes { padding: 0; background: #000; }
@@ -340,10 +345,11 @@
 
 <section class="view page" id="v-today">
   <h1 id="tdTitle">Today</h1>
-  <div class="body">
-    <div class="td-days card" id="tdDays"></div>
-    <div class="td-hist"><h2>On this day <span style="text-transform:none;letter-spacing:0;opacity:.7">· from Wikipedia</span></h2><div id="tdHist"></div></div>
+  <div class="body td-body">
+    <div class="td-col" id="tdSportCol"><h2>In sports</h2><div id="tdSport"></div></div>
+    <div class="td-col"><h2>In history</h2><div id="tdHist"></div></div>
   </div>
+  <div class="td-foot"><div class="td-banner" id="tdDays"></div><div class="td-credit">On this day · from Wikipedia</div></div>
 </section>
 
 <section class="view" id="v-quotes">
@@ -1026,21 +1032,62 @@
   // Wikipedia's featured "selected" events include wars and disasters; keep the wall kid-friendly.
   var GRIM = /\b(kill|killed|killing|dead|death|deaths|die[sd]?|dying|murder|massacr|shoot|shooting|shot|bomb|terror|attack|assassinat|war\b|wars\b|warfare|invasion|invade|execut|genocide|hostage|riot|crash|disaster|earthquake|explo[ds]|sank|sink|sunk|hang(ed)?\b|lynch|rape|abuse|slave|holocaust|nazi|casualt|wound|battle|siege|coup|suicide|famine|plague|epidemic|pandemic|fire\b|burn|injur|victim|tragedy|prison|arrest|guerrilla|militant|insurg|rebel|soldier|troops|army|missile|nuclear|weapon|gun|military|operation\b|occupation|conflict|afghanistan|iraq|cartel|gang|crime|criminal|scandal|impeach)/i;
   function todayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+
+  // Sports: Wikipedia's dated events only hold a sports moment or two a month, so fall back to the
+  // best-known athlete born today (most-viewed article over 30 days), preferring American sports.
+  var SPORT_EVENT = /\b(baseball|basketball|ice hockey|hockey|football|soccer|Olympic|Olympics|World Series|Super Bowl|Stanley Cup|NFL|NBA|WNBA|MLB|NHL|NCAA|Final Four|Rose Bowl|Heisman|Hall of Fame|tennis|Wimbledon|U\.S\. Open|golf|Masters Tournament|boxing|heavyweight|Indianapolis 500|Daytona 500|Kentucky Derby|Triple Crown|World Cup|marathon|home runs?|touchdowns?|no-hitter|perfect game|grand slam|world record)\b/i;
+  var US_SPORT = /\b(baseball|basketball|hockey|Olympic|Olympics|World Series|Super Bowl|Stanley Cup|NFL|NBA|WNBA|MLB|NHL|NCAA|Final Four|Rose Bowl|Heisman|Indianapolis 500|Daytona 500|Kentucky Derby|home runs?|touchdowns?|no-hitter|perfect game)\b/i;
+  var US_EVENT = /\b(United States|U\.S\.|American|America|NASA|President|Congress|Washington|New York|California|Texas|Chicago|Indiana|Apollo|Statue of Liberty|Disney|Wright brothers)\b/;
+  var ATHLETE = /\b(baseball|football|basketball|ice hockey|hockey|soccer|tennis|golfer|boxer|racing driver|athlete|sprinter|swimmer|figure skater|skier|snowboarder|gymnast|quarterback|pitcher|decathlete|Olympic|NASCAR|jockey|cyclist)\b/i;
+  var NOT_ATHLETE = /footballer|cricket|rugby|Australian rules|Gaelic|professional wrestl|politician|actor|actress|singer|rapper/i;
+
+  // "National ___ Day": there is no official list (most are invented by brands, PR firms or National
+  // Day Calendar), so pick the one a kid will care about: food, animals and play beat health and causes.
+  var DAY_FUN = /\b(?:chocolate|candy|cookie|cake|cupcake|pie\b|pizza|taco|burrito|pancake|waffle|donut|doughnut|ice cream|popcorn|pretzel|sandwich|cheese|bacon|french fr|fries|nacho|pasta|spaghetti|noodle|cereal|muffin|brownie|marshmallow|s'mores|hot dog|hamburger|burger|apple|banana|berry|grape|lemon|orange|pumpkin|potato|peanut|nut\b|jelly|bean|corn|candy corn|soup|chili|dessert|sweet|treat|snack|juice|milk|cocoa|caramel|vanilla|sugar|sprinkle|dog|cat|kitten|puppy|pet|animal|plush|teddy|bear|bird|fish|horse|zoo|dinosaur|shark|penguin|panda|unicorn|dragon|monster|play|toy|game|lego|puzzle|kite|balloon|bubble|crayon|color|draw|art|craft|animation|cartoon|comic|superhero|pirate|ninja|robot|space|astronaut|science|book|read|story|poem|joke|laugh|smile|hug|friend|kind|family|pajama|sock|hat|costume|magic|music|dance|sing|bike|skate|camp|picnic|hike|outdoor|nature|tree|garden|flower|leaf|snow|sun\b|sunshine|moon|star\b|stars|food|rainbow|ocean|beach|oatmeal|bagel|toast|biscuit|chip|cracker|lollipop|gummy|fudge|nugget|wing|meatball|sundae|smoothie|lemonade|hot chocolate|frog|turtle|owl|bat|rabbit|bunny|squirrel|whale|dolphin|octopus|llama|moose|zebra|tiger|lion|elephant|giraffe|monkey|parrot|hamster|goldfish)/i;
+  var DAY_DULL = /\b(?:health|medicine|medical|disease|disorder|syndrome|cancer|awareness|memorial|remembrance|victim|survivor|responders|veteran|feast|saint|\bst\.|church|separation|religio|prayer|lung|heart|kidney|liver|blood|mental|diabetes|stroke|nurse|doctor|pharma|insurance|accountant|payroll|lawyer|tax|business|boss|employee|marketing|credit|bank|stock|cyber|data|software|internal)/i;
+  var DAY_TOP = /\b(?:chocolate|candy|ice cream|pizza|cookies?|donuts?|doughnuts?|tacos?|pancakes?|popcorn|cake|cupcakes?|cats?|dogs?|pupp(?:y|ies)|lego|video games?|dinosaurs?|superheroes?|pumpkins?)\b/i;
+  function dayScore(t) {
+    var s = 0;
+    if (DAY_FUN.test(t)) s += 10;
+    if (DAY_TOP.test(t)) s += 3;
+    if (DAY_DULL.test(t)) s -= 10;
+    if (/^National /.test(t)) s += 3;
+    if (/^International |^World /.test(t)) s += 1;
+    if (/ (Week|Month)$/.test(t)) s -= 5;
+    return s - t.length / 20;   // shorter, catchier names win ties
+  }
+  function pickDay(days) {
+    return (days || []).slice().sort(function (a, b) { return dayScore(b) - dayScore(a); })[0] || '';
+  }
+
   function loadToday() {
     var key = todayKey();
     if (todayData && todayData.date === key && todayData.complete) return Promise.resolve();
     var d = new Date(), mm = ('0' + (d.getMonth() + 1)).slice(-2), dd = ('0' + d.getDate()).slice(-2);
     var cached = null;
-    try { cached = JSON.parse(localStorage.getItem('famdash.today2') || 'null'); } catch (e) {}
+    try { cached = JSON.parse(localStorage.getItem('famdash.today3') || 'null'); } catch (e) {}
     if (cached && cached.date === key && cached.complete) { todayData = cached; return Promise.resolve(); }
     var base = 'https://en.wikipedia.org/api/rest_v1/feed/onthisday/';
     function wiki(kind) { return fetch(base + kind + '/' + mm + '/' + dd).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }); }
+    // Picture: the article marked "(pictured)" in the text, else the first linked article with one.
+    function card(e, sel) {
+      var pages = e.pages || [], withPic = pages.filter(function (p) { return p.thumbnail && p.thumbnail.source; });
+      var pg = withPic[0], cut = e.text.indexOf('(pictured)');
+      if (cut > 0) {
+        var before = e.text.slice(0, cut), best = -1;
+        withPic.forEach(function (p) {
+          var at = before.lastIndexOf((p.normalizedtitle || p.title.replace(/_/g, ' ')).replace(/ \(.*\)$/, ''));
+          if (at > best) { best = at; pg = p; }
+        });
+      }
+      // Wikimedia only serves standard thumbnail widths now (330, 500, 960…); 500 is plenty here.
+      var img = pg ? pg.thumbnail.source.replace(/\/(\d+)px-/, '/500px-') : '';
+      var main = pg || pages[0];
+      return { year: e.year, text: e.text, img: img, small: pg ? pg.thumbnail.source : '', sel: !!sel,
+        title: main ? (main.normalizedtitle || main.title.replace(/_/g, ' ')) : '' };
+    }
     function safe(list, sel) {
-      return (list || []).filter(function (e) { return e.text && e.year && !GRIM.test(e.text); }).map(function (e) {
-        var pg = (e.pages || []).filter(function (p) { return p.thumbnail && p.thumbnail.source; })[0];
-        var img = pg ? pg.thumbnail.source.replace(/\/(\d+)px-/, '/640px-') : '';
-        return { year: e.year, text: e.text, img: img, small: pg ? pg.thumbnail.source : '', sel: !!sel };
-      });
+      return (list || []).filter(function (e) { return e.text && e.year && !GRIM.test(e.text); }).map(function (e) { return card(e, sel); });
     }
     // The backend says which day its list is for. Only a list dated today counts as final; an older
     // backend (no date) is shown but re-checked every 30 minutes; a list for another day is dropped.
@@ -1051,42 +1098,84 @@
       if (r.date === undefined) return r.days || [];
       return [];
     }).catch(function () { return null; });
-    return Promise.all([days, wiki('selected')]).then(function (r) {
-      var events = safe(r[1].selected, true);
-      var more = events.length >= 4 ? Promise.resolve([]) : wiki('events').then(function (j) { return safe(j.events); });
-      return more.then(function (m) {
-        var seen = {};
-        events = events.concat(m).filter(function (e) { var k = e.year + e.text.slice(0, 30); if (seen[k]) return false; seen[k] = 1; return true; });
-        // "National ___ Day" first, then the rest
-        var dl = (r[0] || []).slice().sort(function (a, b) { return (/^National /.test(b) ? 1 : 0) - (/^National /.test(a) ? 1 : 0); });
-        todayData = { date: key, days: dl, events: events, complete: daysOk && events.length > 0 };
-        try { localStorage.setItem('famdash.today2', JSON.stringify(todayData)); localStorage.removeItem('famdash.today'); } catch (e) {}
+    return Promise.all([days, wiki('selected'), wiki('events'), wiki('births')]).then(function (r) {
+      var seen = {};
+      var all = safe(r[1].selected, true).concat(safe(r[2].events)).filter(function (e) {
+        var k = e.year + e.text.slice(0, 30); if (seen[k]) return false; seen[k] = 1; return true;
+      });
+      var sports = all.filter(function (e) { return SPORT_EVENT.test(e.text); });
+      var history = all.filter(function (e) { return !SPORT_EVENT.test(e.text); });
+      var usSports = sports.filter(function (e) { return US_SPORT.test(e.text); });
+      // athletes born today, ranked by pageviews (one request for up to 50 titles)
+      var athletes = ((r[3] && r[3].births) || []).filter(function (e) {
+        var p = (e.pages || [])[0], ds = p && p.description || '';
+        return e.year && p && ATHLETE.test(ds) && !NOT_ATHLETE.test(ds) && !GRIM.test(e.text);
+      }).slice(0, 50);
+      var histTop = history.filter(function (e) { return e.title; }).slice(0, 50);
+      return Promise.all([pageviews(athletes.map(function (e) { return e.pages[0].title; })),
+        pageviews(histTop.map(function (e) { return e.title; }))]).then(function (v) {
+        var av = v[0], hv = v[1];
+        function aScore(e) { var p = e.pages[0]; return ((av[p.title.replace(/_/g, ' ')] || 0) + (p.thumbnail ? 1 : 0)) * (/^American /.test(p.description || '') ? 3 : 1); }
+        var born = athletes.slice().sort(function (x, y) { return aScore(y) - aScore(x); }).slice(0, 1).map(function (e) {
+          var c = card(e), p = e.pages[0];
+          c.text = 'Born today: ' + (p.normalizedtitle || p.title.replace(/_/g, ' ')).replace(/ \(.*\)$/, '') + ', ' +
+            (p.description || '').replace(/ \((born )?\d{4}.*\)$/, '');
+          c.born = true;
+          return c;
+        });
+        // history: the best-known subjects first (pageviews of the event's main article), nudged toward
+        // US events, pictures and Wikipedia's own picks; the page rotates through the top few.
+        function hScore(e) {
+          return ((hv[e.title] || 0) + 1) * (US_EVENT.test(e.text) ? 2.5 : 1) * (e.img ? 2 : 1) * (e.sel ? 1.5 : 1);
+        }
+        history.sort(function (x, y) { return hScore(y) - hScore(x); });
+        // a US-flavored sports moment beats a birthday; a birthday beats rugby or cricket
+        var sport = usSports.length ? usSports : born.length ? born : sports;
+        todayData = { date: key, days: r[0] || [], day: pickDay(r[0]), sports: sport, events: history.slice(0, 6),
+          complete: daysOk && history.length > 0 };
+        try { localStorage.setItem('famdash.today3', JSON.stringify(todayData)); localStorage.removeItem('famdash.today2'); } catch (e) {}
         if (current === 'today') renderToday();
       });
     });
   }
+  // 30-day pageviews for up to 50 article titles in one request; {} on any failure.
+  function pageviews(titles) {
+    if (!titles.length) return Promise.resolve({});
+    return fetch('https://en.wikipedia.org/w/api.php?action=query&prop=pageviews&pvipdays=30&format=json&formatversion=2&origin=*&titles=' +
+      encodeURIComponent(titles.slice(0, 50).join('|'))).then(function (res) { return res.json(); }).then(function (j) {
+      var out = {};
+      ((j.query && j.query.pages) || []).forEach(function (pg) {
+        var n = 0, pv = pg.pageviews || {}; for (var k in pv) n += pv[k] || 0;
+        out[pg.title] = n;
+      });
+      return out;
+    }).catch(function () { return {}; });
+  }
   var TKEY = 'famdash.todayIdx';
+  function bigCard(e) {
+    if (!e) return '';
+    return '<div class="td-big card' + (e.img ? '' : ' np') + '">' + (e.img ? '<img class="ph" alt="" src="' + esc(e.img) + '"' +
+      (e.small ? ' onerror="if(this.src!==\'' + esc(e.small) + '\')this.src=\'' + esc(e.small) + '\';else{this.parentNode.classList.add(\'np\');this.remove()}"' : ' onerror="this.parentNode.classList.add(\'np\');this.remove()"') + '>' : '') +
+      '<div class="in"><div class="yr">' + esc(e.year) + '<small>' + (e.born ? 'born ' : '') + (new Date().getFullYear() - e.year) + ' years ago</small></div>' +
+      '<div class="tx">' + esc(e.text.replace(/ \((?:left |right |center )?pictured\)/g, '')) + '</div></div></div>';
+  }
   function renderToday(advance) {
     var t = todayData; if (!t) return;
-    var days = t.days.slice(0, 4);
-    var size = days.length <= 3 ? 5 : 4.4;
-    $('tdDays').innerHTML = '<h2>Today is…</h2>' + (days.length ? days.map(function (d) {
-      return '<div class="td-day" style="font-size:' + size + 'vh">' + esc(d) + '</div>';
-    }).join('') : '<div class="td-day" style="font-size:4vh">' + new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }) + '</div>');
     $('tdTitle').innerHTML = 'Happy <span>' + new Date().toLocaleDateString([], { weekday: 'long' }) + '</span>';
-    // one big event per visit, preferring ones with a picture, rotating through the day's list
-    // Wikipedia's curated picks first; fall back to the broader list only when they run short.
-    var ev = t.events.filter(function (e) { return e.img && e.sel; });
-    if (ev.length < 2) ev = ev.concat(t.events.filter(function (e) { return e.img && !e.sel; }));
-    if (!ev.length) ev = t.events;
+    var day = t.day || '';
+    $('tdDays').innerHTML = day ? 'Today is <span>' + esc(day) + '</span>' : '';
+    // one event per visit, preferring ones with a picture, rotating through the day's list;
+    // Wikipedia's curated picks first, the broader list only when they run short.
+    var ev = t.events;
+    var sp = (t.sports || []).filter(function (e) { return e.img; });
+    if (!sp.length) sp = t.sports || [];
     var i = 0;
     try { i = Number(localStorage.getItem(TKEY) || 0) || 0; } catch (e) {}
-    if (advance) { i = (i + 1) % Math.max(1, ev.length); try { localStorage.setItem(TKEY, String(i)); } catch (e) {} }
-    var e = ev[i % Math.max(1, ev.length)];
-    $('tdHist').innerHTML = e ? '<div class="td-big card">' + (e.img ? '<img class="ph" alt="" src="' + esc(e.img) + '"' +
-      (e.small ? ' onerror="if(this.src!==\'' + esc(e.small) + '\')this.src=\'' + esc(e.small) + '\';else this.remove()"' : ' onerror="this.remove()"') + '>' : '') +
-      '<div class="in"><div class="yr">' + esc(e.year) + '<small>' + (new Date().getFullYear() - e.year) + ' years ago</small></div>' +
-      '<div class="tx">' + esc(e.text) + '</div></div></div>' : '';
+    if (advance) { i = i + 1; try { localStorage.setItem(TKEY, String(i % 1000)); } catch (e) {} }
+    $('tdHist').innerHTML = bigCard(ev[i % Math.max(1, ev.length)]);
+    $('tdSport').innerHTML = bigCard(sp[i % Math.max(1, sp.length)]);
+    $('tdSportCol').style.display = sp.length ? '' : 'none';
+    document.querySelector('#v-today .td-body').classList.toggle('solo', !sp.length);
   }
 
   /* ---------- gratitude ---------- */
@@ -1276,7 +1365,7 @@
     if (view === 'sports' && !(scoresData && (scoresData.games.length || scoresData.featured.length))) return false;
     if (view === 'fantasy' && !(fantasyData && fantasyData.league && fantasyData.matchups && fantasyData.matchups.length)) return false;
     if (view === 'gratitude' && !showNote()) return false;
-    if (view === 'today' && !(todayData && (todayData.days.length || todayData.events.length))) return false;
+    if (view === 'today' && !(todayData && (todayData.events.length || (todayData.sports && todayData.sports.length)))) return false;
     // never show yesterday's page: refresh in the background and catch it on the next cycle
     if (view === 'today' && todayData.date !== todayKey()) { loadToday(); return false; }
     if (view === 'today') renderToday(true);
