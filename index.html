@@ -469,7 +469,7 @@
   }
   // One CORS read of the image gives both the whitespace trim box and the calendar grid.
   function measureBox(url, name) {
-    var bust = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'famdash=trim';
+    var bust = url.indexOf('data:') === 0 ? url : url + (url.indexOf('?') >= 0 ? '&' : '?') + 'famdash=trim';
     return loadImg(bust, true).then(function (im) {
       var box = findBox(im), grid = null;
       try { grid = findGrid(im, name); } catch (e) { grid = null; }
@@ -1130,7 +1130,9 @@
     if (!id) { a.pre = null; return Promise.resolve(); }
     if (a.pre && a.pre.id === id) return Promise.resolve();
     return F.get('photo', { id: id }).then(function (r) {
-      a.pre = { id: id, url: 'data:' + r.mime + ';base64,' + r.data };
+      var url = r.url || ('data:' + r.mime + ';base64,' + r.data);
+      if (r.url) { var warm = new Image(); warm.src = r.url; }   // demo photos are plain URLs: warm the cache
+      a.pre = { id: id, url: url };
     }).catch(function (e) { setStatus('⚠ ' + a.kind + ': ' + e.message); a.pre = null; });
   };
   Album.prototype.ensure = function () {

@@ -21,7 +21,7 @@ Family wall dashboard for an old tablet, driven from a phone controller. It cycl
 | `control.html` | Parent controller: jar +/-, show a view now, upload photos, settings. |
 | `apps-script/Code.gs` | Backend: Google Apps Script web app (calendar, jar state, Drive photos). |
 
-Try it without a backend: open `index.html?demo=1` in one tab and `control.html?demo=1` in another.
+Try it without a backend: open `demo.html` (tablet + phone side by side, live), or `index.html?demo=1` and `control.html?demo=1` in two tabs. Demo photos are from [Unsplash](https://unsplash.com) (Unsplash License); the demo lunch flyer is generated in the browser.
 
 ## Architecture
 

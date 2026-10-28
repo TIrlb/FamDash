@@ -80,21 +80,21 @@
 
   /* ---- Demo backend (no Google needed) ---- */
   var Demo = (function () {
-    var KEYD = 'famdash.demo';
+    var KEYD = 'famdash.demo2';   // bumped when the demo data changes shape
     var state;
     try { state = JSON.parse(localStorage.getItem(KEYD) || 'null'); } catch (e) {}
     if (!state) state = {
       kids: [
-        { id: 'k1', name: 'Ben', count: 23, goal: 50, color: '#2f7fe0' },
-        { id: 'k2', name: 'Nate', count: 37, goal: 50, color: '#ef6c2f' }
+        { id: 'k1', name: 'Emma', count: 23, goal: 50, color: '#2f7fe0' },
+        { id: 'k2', name: 'Leo', count: 37, goal: 50, color: '#ef6c2f' }
       ],
       calendars: ['family', 'team', 'school'],
-      settings: { views: ['calendar', 'jars', 'photo', 'lunch'], viewSeconds: 15, holdSeconds: 30, daysAhead: 30, maxEvents: 14, lunchUrl: 'https://stpiuscatholicschool.net/lunch' },
+      settings: { views: ['calendar', 'jars', 'photo', 'lunch'], viewSeconds: 15, holdSeconds: 30, daysAhead: 30, maxEvents: 14, lunchUrl: 'https://example.org/lunch' },
       gratitude: [],
       ntfyTopic: 'demo'
     };
     if (state.settings.views.indexOf('lunch') < 0 && !state.lunchSeen) { state.settings.views.push('lunch'); state.lunchSeen = true; }
-    if (!state.settings.lunchUrl) state.settings.lunchUrl = 'https://stpiuscatholicschool.net/lunch';
+    if (!state.settings.lunchUrl) state.settings.lunchUrl = 'https://example.org/lunch';
     var ALL = ['calendar', 'jars', 'photo', 'lunch', 'weather', 'sports', 'fantasy', 'quotes', 'gratitude', 'today'];
     var seenV = state.settings.seenViews || ['calendar', 'jars', 'photo', 'lunch'];
     ALL.forEach(function (v) { if (seenV.indexOf(v) < 0) { seenV.push(v); if (state.settings.views.indexOf(v) < 0) state.settings.views.push(v); } });
@@ -106,9 +106,9 @@
       { league: 'baseball/mlb', id: '16', name: 'Chicago Cubs' }];
     if (state.settings.fantasyLeagueId == null) state.settings.fantasyLeagueId = 'demo';
     if (!state.gratitude || !state.gratitude.length) state.gratitude = [
-      { id: 'g1', who: 'Ben', text: 'That Nate let me pick the movie on Friday.', created: new Date(Date.now() - 86400000).toISOString() },
+      { id: 'g1', who: 'Emma', text: 'That Leo let me pick the movie on Friday.', created: new Date(Date.now() - 86400000).toISOString() },
       { id: 'g2', who: 'Mom', text: 'A warm fall afternoon and nobody had anywhere to be.', created: new Date(Date.now() - 2 * 86400000).toISOString() },
-      { id: 'g3', who: 'Nate', text: 'Grandma\'s chocolate chip cookies.', created: new Date(Date.now() - 3 * 86400000).toISOString() }];
+      { id: 'g3', who: 'Leo', text: 'Grandma\'s chocolate chip cookies.', created: new Date(Date.now() - 3 * 86400000).toISOString() }];
     if (!state.settings.jarMode) { state.settings.jarMode = 'separate'; state.settings.jarGoal = 100; state.settings.jarTitle = 'Family jar'; }
     function save() { try { localStorage.setItem(KEYD, JSON.stringify(state)); } catch (e) {} }
     function clone() { return JSON.parse(JSON.stringify(state)); }
@@ -128,30 +128,76 @@
     }
     var F = '#3f8cff', T = '#22a06b', S = '#c05ec7';
     var events = [
-      ev('Flag football practice', at(0, 18, 0, 75), 'Team', T, 'Bittersweet Park'),
+      ev('Soccer practice', at(0, 18, 0, 75), 'Team', T, 'Riverside Park'),
       ev('Pizza night', at(0, 19, 30), 'Family', F),
       ev('Game vs. Raiders', at(1, 9, 0, 60), 'Team', T, 'Field 3'),
       ev('Grandma visiting', allDay(1), 'Family', F),
-      ev('Ben — dentist', at(3, 15, 40, 45), 'Family', F, 'Granger Family Dental'),
+      ev('Emma — dentist', at(3, 15, 40, 45), 'Family', F, 'Main Street Dental'),
       ev('Picture day', allDay(4), 'School', S),
-      ev('Nate — swim lesson', at(4, 17, 0, 45), 'Family', F),
+      ev('Leo — swim lesson', at(4, 17, 0, 45), 'Family', F, 'Community Pool'),
       ev('Fall break — no school', allDay(7), 'School', S),
       ev('Pumpkin patch', at(8, 11, 0, 180), 'Family', F),
       ev('Practice', at(9, 18, 0, 75), 'Team', T),
-      ev('Varsity Football 2026 vs Mishawaka Catholic', at(1, 13, 0, 120), 'Team', T, '1311 S Logan St, Mishawaka, IN 46544, United States'),
-      ev('Varsity Football 2026 - Team Pictures', at(3, 17, 45, 30), 'Team', T, '52553 Fir Rd, Granger, IN 46530'),
-      ev('Ben - Morning Band', at(3, 7, 0, 45), 'Family', F),
-      ev('Soccer practice', at(3, 17, 30, 60), 'Family', F),
-      ev('Varsity Football 2026 - Practice', at(5, 18, 0, 90), 'Team', T, '52553 Fir Rd, Granger, IN 46530'),
-      ev('Ben - Afternoon Band', at(5, 15, 0, 60), 'Family', F),
-      ev('Nate Conference', at(5, 16, 10, 20), 'School', S)
+      ev('Emma — piano recital', at(2, 18, 30, 90), 'Family', F, 'Lincoln Middle School'),
+      ev('Book fair', at(3, 8, 0, 420), 'School', S),
+      ev('Leo — morning band', at(3, 7, 15, 45), 'School', S),
+      ev('Movie night', at(5, 19, 0, 120), 'Family', F),
+      ev('Parent-teacher conferences', at(5, 16, 10, 20), 'School', S)
     ];
     events.sort(function (a, b) { return a.start < b.start ? -1 : 1; });
-    var photos = [
-      { id: 'p1', grad: ['#ffb36b', '#e0567b'] },
-      { id: 'p2', grad: ['#6bc5ff', '#3f5bd8'] },
-      { id: 'p3', grad: ['#9be38f', '#2a8f6b'] }
-    ];
+    // Demo gallery: free-to-use photos from Unsplash (Unsplash License), hotlinked from their CDN as Unsplash asks.
+    var photos = ['1542037104857-ffbb0b9155fb', '1609220136736-443140cffec6', '1531983412531-1f49a365ffed',
+      '1511895426328-dc8714191300', '1503454537195-1dcabb73ffb9', '1536640712-4d4c36ff0e4e'].map(function (id) {
+      return { id: 'u' + id, url: 'https://images.unsplash.com/photo-' + id + '?w=1600&q=80&auto=format' };
+    });
+
+    // A made-up school lunch flyer for the current month, drawn on a canvas, so the weekly lunch view works in the demo.
+    var flyerCache = null;
+    function demoFlyer() {
+      var now = new Date(), key = now.getFullYear() + '-' + now.getMonth();
+      if (flyerCache && flyerCache.key === key) return flyerCache;
+      var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      var MENU = [['Pizza Day', 'Side Salad'], ['Chicken Nuggets', 'Mac & Cheese'], ['Walking Tacos', 'Spanish Rice'], ['Pancakes & Sausage', 'Hash Browns'],
+        ['Spaghetti', 'Garlic Bread'], ['Grilled Cheese', 'Tomato Soup'], ['Turkey Burger', 'Sweet Potato Fries'], ['Orange Chicken', 'Fried Rice'],
+        ['Hot Dogs', 'Baked Beans'], ['Chicken Alfredo', 'Breadstick'], ['Sloppy Joes', 'Chips'], ['French Toast Sticks', 'Yogurt & Fruit']];
+      var y = now.getFullYear(), m = now.getMonth(), weeks = [], cur = null, d = new Date(y, m, 1);
+      while (d.getMonth() === m) {
+        var wd = d.getDay();
+        if (wd >= 1 && wd <= 5) { if (!cur || wd === 1) { cur = [0, 0, 0, 0, 0]; weeks.push(cur); } cur[wd - 1] = d.getDate(); }
+        d.setDate(d.getDate() + 1);
+      }
+      var W = 1600, H = 1236, c = document.createElement('canvas'); c.width = W; c.height = H;
+      var x = c.getContext('2d');
+      x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
+      x.fillStyle = '#1f3a5f'; x.font = 'bold 40px Georgia, serif'; x.textAlign = 'left';
+      x.fillText('Maple Grove Elementary  ·  ' + MONTHS[m] + ' ' + y + ' Lunch', 100, 80);
+      var xs = [100, 390, 680, 970, 1260, 1550], top = 110, head = 70, bottom = 1000;
+      var rowH = (bottom - top - head) / weeks.length;
+      var ys = [top, top + head]; for (var i = 1; i <= weeks.length; i++) ys.push(Math.round(top + head + rowH * i));
+      x.strokeStyle = '#000'; x.lineWidth = 3;
+      xs.forEach(function (gx) { x.beginPath(); x.moveTo(gx, top); x.lineTo(gx, ys[ys.length - 1]); x.stroke(); });
+      ys.forEach(function (gy) { x.beginPath(); x.moveTo(xs[0], gy); x.lineTo(xs[5], gy); x.stroke(); });
+      x.textAlign = 'center'; x.fillStyle = '#000'; x.font = 'italic 30px Georgia, serif';
+      ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].forEach(function (n, j) { x.fillText(n, (xs[j] + xs[j + 1]) / 2, top + 47); });
+      var k = 0;
+      weeks.forEach(function (wk, wi) {
+        wk.forEach(function (day, j) {
+          if (!day) return;
+          var cx = (xs[j] + xs[j + 1]) / 2, cy = ys[wi + 1] + rowH * 0.28;
+          x.fillStyle = '#000'; x.font = 'bold 30px sans-serif'; x.fillText(String(day), cx, cy);
+          var item = MENU[(day * 5) % MENU.length];   // neighbouring days always differ
+          x.font = 'bold 28px sans-serif'; x.fillText(item[0], cx, cy + 40);
+          x.font = '24px sans-serif'; x.fillStyle = '#333'; x.fillText(item[1], cx, cy + 74);
+        });
+      });
+      x.textAlign = 'left'; x.fillStyle = '#000'; x.font = 'bold 22px sans-serif';
+      x.fillText('Additional Daily Lunch Options:', 100, 1040);
+      x.font = '21px sans-serif';
+      ['Ham or Turkey Sandwich', 'Sunbutter and Jelly Sandwich', 'Salad Bar with Roll', 'Fresh Fruit and Milk'].forEach(function (t, j) { x.fillText(t, 170, 1070 + j * 28); });
+      x.font = 'italic 18px sans-serif'; x.fillText('*Menu items are subject to change. This is a sample menu for the FamDash demo.', 100, 1200);
+      flyerCache = { key: key, name: MONTHS[m] + ' lunch.png', url: c.toDataURL('image/png') };
+      return flyerCache;
+    }
     var quotes = [
       { id: 'q1', grad: ['#2b3a55', '#1b2232'], text: ['Be kind whenever possible.', 'It is always possible.'] },
       { id: 'q2', grad: ['#4a2c40', '#24151f'], text: ['Do small things', 'with great love.'] },
@@ -195,8 +241,8 @@
     };
     var FANTASY_TEAMS = [
       { id: 1, name: 'Touchdown Turtles', abbrev: 'TT', owner: 'Dad', logo: 'https://g.espncdn.com/lm-static/ffl/images/default_logos/3.svg', wins: 3, losses: 1, ties: 0, pf: 512.4, seed: 1 },
-      { id: 2, name: 'Blitz Bros', abbrev: 'BB', owner: 'Ben', logo: 'https://g.espncdn.com/lm-static/ffl/images/default_logos/19.svg', wins: 2, losses: 2, ties: 0, pf: 488.1, seed: 2 },
-      { id: 3, name: 'End Zone Express', abbrev: 'EZE', owner: 'Nate', logo: 'https://g.espncdn.com/lm-static/ffl/images/default_logos/7.svg', wins: 2, losses: 2, ties: 0, pf: 470.9, seed: 3 },
+      { id: 2, name: 'Blitz Bros', abbrev: 'BB', owner: 'Emma', logo: 'https://g.espncdn.com/lm-static/ffl/images/default_logos/19.svg', wins: 2, losses: 2, ties: 0, pf: 488.1, seed: 2 },
+      { id: 3, name: 'End Zone Express', abbrev: 'EZE', owner: 'Leo', logo: 'https://g.espncdn.com/lm-static/ffl/images/default_logos/7.svg', wins: 2, losses: 2, ties: 0, pf: 470.9, seed: 3 },
       { id: 4, name: 'Fourth & Long', abbrev: 'FL', owner: 'Mom', logo: 'https://g.espncdn.com/lm-static/ffl/images/default_logos/12.svg', wins: 1, losses: 3, ties: 0, pf: 431.6, seed: 4 }
     ];
     function g(lg, st, detail, a, h, extra) {
@@ -268,14 +314,13 @@
             games: DEMO_GAMES() };
         }
         else if (action === 'fantasy') r = state.settings.fantasyLeagueId ? Object.assign({ ok: true }, DEMO_FANTASY()) : { ok: true, league: null };
-        else if (action === 'lunch') r = { ok: true, name: 'October lunch.png',
-          url: 'https://files.ecatholic.com/2970/pictures/2026/9/October%20lunch.png?t=1790092656000' };
+        else if (action === 'lunch') { var fl = demoFlyer(); r = { ok: true, name: fl.name, url: fl.url }; }
         else if (action === 'photo') {
           var qi = -1; quotes.forEach(function (x, j) { if (x.id === p.id) qi = j; });
           if (qi >= 0) r = { ok: true, mime: 'image/svg+xml', data: quoteSvg(quotes[qi]) };
           else {
-            var i = 0; photos.forEach(function (x, j) { if (x.id === p.id) i = j; });
-            r = { ok: true, mime: 'image/svg+xml', data: photoSvg(photos[i], i) };
+            var ph = photos.filter(function (x) { return x.id === p.id; })[0] || photos[0];
+            r = { ok: true, url: ph.url };
           }
         }
         return new Promise(function (res) { setTimeout(function () { res(r); }, 150); });

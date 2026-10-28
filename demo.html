@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FamDash: a family dashboard for your old tablet</title>
+<meta name="description" content="Turn the old tablet sitting in a drawer into your own family dashboard: calendar, chores jar, photos, lunch menu, weather and scores.">
+<meta property="og:title" content="Turn the old tablet in your drawer into a family dashboard">
+<meta property="og:description" content="Calendar, reward jars, family photos, school lunch, weather, scores, all on the tablet you already own. Try the live demo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #11141c; --ink: #f4efe6; --muted: #a7a9b4; --warm: #ffc56b; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: radial-gradient(120% 90% at 20% 0%, #222a3b 0%, var(--bg) 60%); color: var(--ink); font-family: 'Nunito', system-ui, sans-serif; min-height: 100vh; }
+  header { max-width: 1180px; margin: 0 auto; padding: 36px 20px 10px; }
+  h1 { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: clamp(28px, 4.2vw, 46px); line-height: 1.1; }
+  h1 span { color: var(--warm); }
+  header p { color: var(--muted); font-size: 18px; margin-top: 10px; max-width: 760px; line-height: 1.5; }
+  .stage { max-width: 1180px; margin: 22px auto 0; padding: 0 20px; display: flex; gap: 28px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .tablet { background: #050608; border-radius: 26px; padding: 18px; box-shadow: 0 30px 60px rgba(0,0,0,.5); }
+  .phone { background: #050608; border-radius: 34px; padding: 12px; box-shadow: 0 30px 60px rgba(0,0,0,.5); }
+  .screen { position: relative; overflow: hidden; border-radius: 10px; background: #161a24; }
+  .phone .screen { border-radius: 24px; }
+  .screen iframe { border: 0; position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  .lbl { text-align: center; color: var(--muted); font-weight: 700; font-size: 14px; margin-top: 10px; }
+  .lbl b { color: var(--warm); }
+  /* on phones, keep the tablet in view while you tap the controller below it */
+  @media (max-width: 900px) {
+    .stage > div:first-child { position: sticky; top: 6px; z-index: 5; }
+    .stage > div:first-child .lbl { display: none; }
+  }
+  ul { max-width: 1180px; margin: 34px auto 0; padding: 0 20px 50px; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  li { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 16px; line-height: 1.45; color: var(--muted); }
+  li b { display: block; color: var(--ink); font-size: 17px; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Turn the old tablet in your drawer into your own <span>family dashboard</span></h1>
+  <p>Your family calendar, reward jars, photos, the school lunch menu, weather and scores, rotating on a tablet you already own, controlled from your phone. This is a live demo: tap <b style="color:var(--warm)">+</b> on the phone and watch the jar.</p>
+</header>
+
+<div class="stage">
+  <div>
+    <div class="tablet"><div class="screen" id="tabScreen"><iframe id="tab" title="Dashboard demo" src="index.html?demo=1"></iframe></div></div>
+    <div class="lbl">The <b>tablet</b> on your counter or wall</div>
+  </div>
+  <div>
+    <div class="phone"><div class="screen" id="phoneScreen"><iframe id="phone" title="Controller demo" src="control.html?demo=1"></iframe></div></div>
+    <div class="lbl">The <b>controller</b> on Mom &amp; Dad's phones</div>
+  </div>
+</div>
+
+<ul>
+  <li><b>Family calendar</b>Pulls from your Google Calendar plus team and school calendars.</li>
+  <li><b>Reward jars</b>Tap + on your phone and a marble drops in the jar. Separate jars or one family jar.</li>
+  <li><b>Photos &amp; quotes</b>Upload from your phone; they rotate on the tablet.</li>
+  <li><b>School lunch</b>This week's menu, big enough to read from across the kitchen.</li>
+  <li><b>Weather, scores &amp; more</b>Radar, your teams, fantasy football, gratitude notes, and "today is National ___ Day".</li>
+  <li><b>No new hardware</b>Works on an old iPad or Android tablet. No subscription.</li>
+</ul>
+
+<script>
+  // Scale the real pages into the device frames. Both are same-origin, so the demo
+  // controller drives the demo dashboard through shared localStorage, just like a real phone would.
+  function fit() {
+    var vw = Math.min(window.innerWidth, 1180) - 40;
+    var phoneW = vw > 900 ? 250 : Math.min(250, vw * 0.7);
+    var tabW = vw > 900 ? vw - phoneW - 28 - 36 - 24 : vw - 36;
+    var tabK = tabW / 1280, phoneK = phoneW / 390;
+    var t = document.getElementById('tab'), ts = document.getElementById('tabScreen');
+    t.style.width = '1280px'; t.style.height = '800px'; t.style.transform = 'scale(' + tabK + ')';
+    ts.style.width = tabW + 'px'; ts.style.height = (800 * tabK) + 'px';
+    var p = document.getElementById('phone'), ps = document.getElementById('phoneScreen');
+    p.style.width = '390px'; p.style.height = '780px'; p.style.transform = 'scale(' + phoneK + ')';
+    ps.style.width = phoneW + 'px'; ps.style.height = (780 * phoneK) + 'px';
+  }
+  window.addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>
