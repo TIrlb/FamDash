@@ -104,6 +104,17 @@
   .lunch-wrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
   .lunch-card { background: #fff; border-radius: 18px; padding: 1.2vh; box-shadow: 0 18px 40px rgba(0,0,0,.35); line-height: 0; }
   .lunch-card canvas, .lunch-card img { display: block; border-radius: 8px; }
+  /* weekly layout: Mon Tue Wed / Thu Fri + daily options */
+  .lw { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; gap: 1.8vh 1.4vw; }
+  .lw-cell { background: #fff; border-radius: 1.6vh; display: flex; flex-direction: column; min-height: 0; overflow: hidden; box-shadow: 0 12px 28px rgba(0,0,0,.3); }
+  .lw-cell .lbl { flex: none; background: #2a3142; color: var(--ink); font: 600 2.6vh 'Fredoka', sans-serif; padding: .7vh 1vw; display: flex; justify-content: space-between; align-items: baseline; }
+  .lw-cell .lbl small { font: 700 1.8vh 'Nunito', sans-serif; color: var(--muted); }
+  .lw-cell.today { box-shadow: 0 0 0 .5vh var(--warm), 0 12px 28px rgba(0,0,0,.3); }
+  .lw-cell.today .lbl { background: var(--warm); color: #2b1a00; }
+  .lw-cell.today .lbl small { color: #5a3a00; }
+  .lw-cell.past { opacity: .55; }
+  .lw-cell .img { flex: 1; min-height: 0; padding: .6vh; display: flex; align-items: center; justify-content: center; }
+  .lw-cell canvas { max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; display: block; }
 
   /* shared page layout for the newer views */
   .page { display: flex; flex-direction: column; }
@@ -154,22 +165,25 @@
   .fv .mu .res.W { color: #5fd38d; } .fv .mu .res.L { color: #ff8a7a; }
   .fv .sub { font-size: 2.1vh; color: var(--muted); font-weight: 700; margin-top: .4vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sp-h2 { font-size: 2.2vh; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; flex: none; margin-bottom: -.8vh; }
-  .sp-games { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.8vh 1.6vw; align-content: start; }
-  .gm { padding: 1.5vh 1.3vw; display: flex; flex-direction: column; gap: .7vh; min-width: 0; }
-  .gm-top { display: flex; justify-content: space-between; align-items: center; font-size: 1.8vh; font-weight: 800; color: var(--muted); }
+  /* Tile sizes are in em on a base of (k * 1vh): renderSports sets k from the number of games. */
+  .sp-games { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.8vh 1.6vw; align-content: start; font-size: calc(var(--k, 1) * 1vh); }
+  .sp-games.fill { grid-auto-rows: 1fr; align-content: stretch; }
+  .gm { padding: 1.5em 1.3em; display: flex; flex-direction: column; justify-content: center; gap: .7em; min-width: 0; }
+  .gm-top { display: flex; justify-content: space-between; align-items: center; font-size: 1.8em; font-weight: 800; color: var(--muted); }
   .gm-top .lg { letter-spacing: .08em; }
-  .gm-top .st { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1vw; }
+  .gm-top .st { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: .6em; }
   .gm-top .st.live { color: #ff6b6b; }
-  .gm-top .st.live::before { content: ''; display: inline-block; width: 1vh; height: 1vh; border-radius: 50%; background: #ff6b6b; margin-right: .5vw; vertical-align: .15vh; animation: blink 1.6s infinite; }
+  .gm-top .st.live::before { content: ''; display: inline-block; width: .55em; height: .55em; border-radius: 50%; background: #ff6b6b; margin-right: .3em; vertical-align: .08em; animation: blink 1.6s infinite; }
   @keyframes blink { 50% { opacity: .25; } }
-  .gm-t { display: flex; align-items: center; gap: .7vw; font-size: 2.6vh; font-weight: 800; }
-  .gm-t img { width: 3.6vh; height: 3.6vh; object-fit: contain; flex: none; }
-  .gm-t .rk { font-size: 1.7vh; color: var(--muted); font-weight: 800; }
+  .gm-t { display: flex; align-items: center; gap: .3em; font-size: 2.6em; font-weight: 800; }
+  .gm-t img { width: 1.4em; height: 1.4em; object-fit: contain; flex: none; }
+  .gm-t .rk { font-size: .65em; color: var(--muted); font-weight: 800; }
   .gm-t .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .gm-t .sc { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 3vh; font-variant-numeric: tabular-nums; }
-  .gm-t .rc { font-size: 1.8vh; color: var(--muted); font-weight: 700; }
+  .gm-t .sc { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 1.15em; font-variant-numeric: tabular-nums; }
+  .gm-t .rc { font-size: .7em; color: var(--muted); font-weight: 700; }
   .gm.post .gm-t:not(.win) { color: var(--muted); }
-  .gm-note { font-size: 1.7vh; color: var(--muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sp-games.big .gm-note { white-space: normal; line-height: 1.25; }
+  .gm-note { font-size: 1.7em; color: var(--muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .gm-note.ser { color: var(--ink); opacity: .85; }
   .gm.fav { box-shadow: inset 0 0 0 2px rgba(255,197,107,.55); }
 
@@ -265,8 +279,9 @@
 </section>
 
 <section class="view" id="v-lunch">
-  <h1>Lunch <span>menu</span></h1>
+  <h1 id="lunchTitle">Lunch <span>menu</span></h1>
   <div class="lunch-wrap" id="lunchWrap"><div class="lunch-card" id="lunchCard"></div></div>
+  <div class="lw" id="lunchWeek" style="display:none"></div>
 </section>
 
 <section class="view page" id="v-weather">
@@ -351,6 +366,7 @@
   var shownCounts = {};           // marble counts last drawn on the jar view
   var views = ['calendar', 'jars', 'photo', 'lunch', 'weather', 'sports', 'fantasy', 'quotes', 'gratitude'];
   var lunch = null;               // {url, name} once the image has actually loaded
+  var lunchImg = null;
   var current = null, idx = -1, timer = null, holding = false;
 
   function $(id) { return document.getElementById(id); }
@@ -419,12 +435,172 @@
       im.src = src;
     });
   }
-  function measureBox(url) {
+  var GRIDKEY = 'famdash.lunchGrid';
+  function savedGrid(url) {
+    try { var g = JSON.parse(localStorage.getItem(GRIDKEY) || 'null'); return g && g.url === url ? g.grid : undefined; } catch (e) { return undefined; }
+  }
+  // One CORS read of the image gives both the whitespace trim box and the calendar grid.
+  function measureBox(url, name) {
     var bust = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'famdash=trim';
-    return loadImg(bust, true).then(findBox).then(function (box) {
-      if (box) try { localStorage.setItem(BOXKEY, JSON.stringify({ url: url, box: box })); } catch (e) {}
-      return box;
-    }).catch(function () { return null; });
+    return loadImg(bust, true).then(function (im) {
+      var box = findBox(im), grid = null;
+      try { grid = findGrid(im, name); } catch (e) { grid = null; }
+      try {
+        if (box) localStorage.setItem(BOXKEY, JSON.stringify({ url: url, box: box }));
+        localStorage.setItem(GRIDKEY, JSON.stringify({ url: url, grid: grid }));
+      } catch (e) {}
+      return { box: box, grid: grid };
+    }).catch(function () { return { box: null, grid: null }; });
+  }
+
+  var MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+  // Which month the flyer is for: from the file name ("October lunch.png"), else this month.
+  function flyerMonth(name) {
+    var now = new Date(), m = now.getMonth(), y = now.getFullYear();
+    var low = String(name || '').toLowerCase();
+    for (var i = 0; i < 12; i++) if (low.indexOf(MONTHS[i]) >= 0 || low.indexOf(MONTHS[i].slice(0, 3) + ' ') >= 0) { m = i; break; }
+    if (m - now.getMonth() > 6) y--; else if (now.getMonth() - m > 6) y++;
+    return { m: m, y: y };
+  }
+  // School weeks of a month as [[Date|null x5]] (Mon..Fri), one entry per week with a school day.
+  function monthWeeks(y, m) {
+    var weeks = [], cur = null, d = new Date(y, m, 1);
+    while (d.getMonth() === m) {
+      var wd = d.getDay();
+      if (wd >= 1 && wd <= 5) {
+        if (!cur || wd === 1) { cur = [null, null, null, null, null]; weeks.push(cur); }
+        cur[wd - 1] = new Date(d);
+      }
+      d.setDate(d.getDate() + 1);
+    }
+    return weeks;
+  }
+
+  // Find the calendar's ruled grid: long dark horizontal/vertical lines. Returns {xs, ys, header, wdCol0, y, m}
+  // or null when the flyer doesn't look like a Mon–Fri (or Sun–Sat) grid matching its month.
+  function findGrid(im, name) {
+    var W = im.naturalWidth, H = im.naturalHeight;
+    // Full resolution: downscaling blurs 1px rules into grey and they stop registering as lines.
+    var s = Math.min(1, 2400 / Math.max(W, H));
+    var w = Math.round(W * s), h = Math.round(H * s);
+    var c = document.createElement('canvas'); c.width = w; c.height = h;
+    var x = c.getContext('2d'); x.drawImage(im, 0, 0, w, h);
+    var d = x.getImageData(0, 0, w, h).data;
+    var dark = new Uint8Array(w * h);
+    for (var i = 0, k = 0; i < w * h; i++, k += 4) dark[i] = (d[k] < 120 && d[k + 1] < 120 && d[k + 2] < 120) ? 1 : 0;
+    function lines(len, span, at, minRun) {
+      var hits = [];
+      for (var a = 0; a < len; a++) {
+        var best = 0, run = 0;
+        for (var b = 0; b < span; b++) { if (dark[at(a, b)]) { run++; if (run > best) best = run; } else run = 0; }
+        if (best >= minRun) hits.push(a);
+      }
+      var out = [];
+      hits.forEach(function (v) { if (out.length && v - out[out.length - 1][1] <= 4) out[out.length - 1][1] = v; else out.push([v, v]); });
+      return out.map(function (g) { return Math.round((g[0] + g[1]) / 2 / s); });
+    }
+    var ys = lines(h, w, function (a, b) { return a * w + b; }, w * 0.4);
+    var xs = lines(w, h, function (a, b) { return b * w + a; }, h * 0.3);
+    var fm = flyerMonth(name), weeks = monthWeeks(fm.y, fm.m);
+    var wdCol0;
+    if (xs.length === 6) wdCol0 = 0;          // Mon..Fri columns
+    else if (xs.length === 8) wdCol0 = 1;     // Sun..Sat: Monday is the 2nd column
+    else return null;
+    var bands = ys.length - 1, header;
+    if (bands === weeks.length + 1) header = true;
+    else if (bands === weeks.length) header = false;
+    else return null;
+    return { xs: xs, ys: ys, header: header, wdCol0: wdCol0, y: fm.y, m: fm.m, W: W, H: H, extras: findExtras(dark, w, h, s, xs, ys) };
+  }
+  // "Additional daily options" text under the grid's left half, as a trimmed rect (or null).
+  // Keeps the heading plus its indented list and drops the fine print that follows.
+  function findExtras(dark, w, h, s, xs, ys) {
+    var x0 = Math.round(xs[0] * s), x1 = Math.round(xs[Math.min(3, xs.length - 1)] * s);
+    var y0 = Math.round(ys[ys.length - 1] * s) + Math.max(6, Math.round(6 * s));
+    // text lines = runs of rows containing ink; record each line's extent
+    var lines = [], cur = null;
+    for (var yy = y0; yy < h; yy++) {
+      var lo = -1, hi = -1;
+      for (var xx = x0; xx < x1; xx++) if (dark[yy * w + xx]) { if (lo < 0) lo = xx; hi = xx; }
+      if (lo >= 0) {
+        if (!cur) { cur = { y0: yy, y1: yy, lo: lo, hi: hi }; lines.push(cur); }
+        else { cur.y1 = yy; if (lo < cur.lo) cur.lo = lo; if (hi > cur.hi) cur.hi = hi; }
+      } else cur = null;
+    }
+    lines = lines.filter(function (l) { return l.y1 - l.y0 >= 3; });      // drop specks and rules
+    if (!lines.length) return null;
+    var left = Math.min.apply(null, lines.map(function (l) { return l.lo; }));
+    var keep = [lines[0]];
+    var indentStep = 12 * s;
+    for (var i = 1; i < lines.length; i++) {
+      if (lines[i].lo - left < indentStep && keep.length > 1) break;      // back at the margin after a list: fine print
+      keep.push(lines[i]);
+    }
+    if (keep.length < 2) keep = lines;
+    var minX = Math.min.apply(null, keep.map(function (l) { return l.lo; })), maxX = Math.max.apply(null, keep.map(function (l) { return l.hi; }));
+    var minY = keep[0].y0, maxY = keep[keep.length - 1].y1;
+    if (maxY - minY < 20 * s) return null;
+    var pad = 8, top = Math.max(y0, minY - pad);   // never reach back up into the grid's bottom rule
+    return { x: Math.max(0, Math.round((minX - pad) / s)), y: Math.round(top / s),
+             w: Math.round((maxX - minX + 2 * pad) / s), h: Math.round((maxY + pad - top) / s) };
+  }
+
+  // The week to show: this week, or next week on Sat/Sun. Returns {idx, days} in the flyer's month, or null.
+  function pickWeek(grid) {
+    var t = new Date(); t.setHours(0, 0, 0, 0);
+    if (t.getDay() === 6) t.setDate(t.getDate() + 2); else if (t.getDay() === 0) t.setDate(t.getDate() + 1);
+    var weeks = monthWeeks(grid.y, grid.m);
+    for (var i = 0; i < weeks.length; i++) {
+      if (weeks[i].some(function (d) { return d && d.getTime() === t.getTime(); })) return { idx: i, days: weeks[i], target: t };
+    }
+    return null;
+  }
+
+  function cropCanvas(im, r) {
+    var c = document.createElement('canvas');
+    c.width = Math.max(1, r.w); c.height = Math.max(1, r.h);
+    c.getContext('2d').drawImage(im, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);   // tainted is fine: display only
+    return c;
+  }
+
+  function renderLunchWeek(im, grid, wk) {
+    var band = wk.idx + (grid.header ? 1 : 0);
+    var y0 = grid.ys[band], y1 = grid.ys[band + 1];
+    var DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var html = [], canv = [];
+    for (var i = 0; i < 5; i++) {
+      var d = wk.days[i];
+      if (!d) continue;                       // partial first/last week: only the month's school days
+      var cx0 = grid.xs[grid.wdCol0 + i], cx1 = grid.xs[grid.wdCol0 + i + 1];
+      var inset = 4;
+      canv.push(d ? cropCanvas(im, { x: cx0 + inset, y: y0 + inset, w: cx1 - cx0 - 2 * inset, h: y1 - y0 - 2 * inset }) : null);
+      var cls = d && d.getTime() === today.getTime() ? ' today' : (d && d < today ? ' past' : '');
+      html.push('<div class="lw-cell' + cls + '"><div class="lbl">' + DAYS[i] +
+        '<small>' + (d ? d.toLocaleDateString([], { month: 'short', day: 'numeric' }) : '') + '</small></div><div class="img"></div></div>');
+    }
+    if (grid.extras) html.push('<div class="lw-cell"><div class="lbl">Every day<small>options</small></div><div class="img"></div></div>');
+    var box = $('lunchWeek');
+    box.innerHTML = html.join('');
+    var imgs = box.querySelectorAll('.img');
+    canv = canv.filter(Boolean);
+    canv.forEach(function (c, i) { imgs[i].appendChild(c); });
+    if (grid.extras) imgs[canv.length].appendChild(cropCanvas(im, grid.extras));
+    // full week: Mon–Wed over Thu–Fri + options; short weeks get one row (or 2x2) so cells stay big
+    var n = html.length;
+    box.style.gridTemplateColumns = 'repeat(' + (n <= 3 ? n : n === 4 ? 2 : 3) + ', 1fr)';
+    box.style.gridTemplateRows = n <= 3 ? '62%' : '1fr 1fr';
+    box.style.alignContent = n <= 3 ? 'center' : '';
+    var monday = wk.days.filter(Boolean)[0];
+    $('lunchTitle').innerHTML = 'Lunch <span>· week of ' + monday.toLocaleDateString([], { month: 'long', day: 'numeric' }) + '</span>';
+    box.style.display = ''; $('lunchWrap').style.display = 'none';
+  }
+  function showLunch(im, r, box, grid) {
+    var wk = grid ? pickWeek(grid) : null;
+    if (grid && wk) { renderLunchWeek(im, grid, wk); return; }
+    $('lunchTitle').innerHTML = 'Lunch <span>menu</span>';
+    $('lunchWeek').style.display = 'none'; $('lunchWrap').style.display = '';
+    renderLunch(im, box);
   }
   function renderLunch(im, box) {
     var el = document.createElement('canvas');
@@ -442,10 +618,12 @@
     return F.get('lunch').then(function (r) {
       if (lunch && lunch.url === r.url) return;
       return loadImg(r.url, false).then(function (im) {
-        lunch = r;
-        var box = savedBox(r.url);
-        renderLunch(im, box);
-        if (!box) measureBox(r.url).then(function (b) { if (b && lunch === r) renderLunch(im, b); });
+        lunch = r; lunchImg = im;
+        var box = savedBox(r.url), grid = savedGrid(r.url);
+        showLunch(im, r, box, grid);
+        if (!box || grid === undefined) measureBox(r.url, r.name).then(function (m) {
+          if (lunch === r) showLunch(im, r, m.box, m.grid);
+        });
       }, function () {
         if (!lunch) setStatus('⚠ lunch image did not load: ' + r.url.split('/').pop());
       });
@@ -653,9 +831,21 @@
     $('spFeat').style.gridTemplateColumns = 'repeat(' + Math.max(1, feat.length) + ', 1fr)';
     $('spFeat').innerHTML = feat.map(featCard).join('');
     var games = d.games.slice(0, feat.length ? 6 : 9);
+    // Fewer games -> fewer columns and bigger tiles. Featured cards take a row, so step down a size.
+    var n = games.length, cols, k;
+    if (n <= 1) { cols = 1; k = 2.6; } else if (n === 2) { cols = 2; k = 2.2; } else if (n === 3) { cols = 3; k = 1.85; }
+    else if (n === 4) { cols = 2; k = 1.7; } else if (n <= 6) { cols = 3; k = 1.4; } else { cols = 3; k = 1.15; }
+    if (feat.length && n > 1) k = Math.max(1, k * 0.8);
+    var g = $('spGames');
+    g.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+    g.style.setProperty('--k', k);
+    g.className = 'sp-games fill' + (k >= 1.7 ? ' big' : '');
+    // a single row shouldn't stretch to the full height
+    g.style.gridAutoRows = (n <= 3 && n > 0) ? (feat.length ? '1fr' : 'minmax(0, 60%)') : '';
+    g.style.alignContent = (n <= 3 && !feat.length) ? 'center' : '';
     $('spH2').textContent = feat.length && games.length ? 'Top games' : '';
     $('spH2').style.display = feat.length && games.length ? '' : 'none';
-    $('spGames').innerHTML = games.map(function (g) { return gameTile(g, favIds); }).join('');
+    g.innerHTML = games.map(function (x) { return gameTile(x, favIds); }).join('');
   }
 
   /* ---------- fantasy ---------- */
@@ -899,7 +1089,11 @@
     document.body.classList.toggle('photo-on', view === 'photo');
     document.body.classList.toggle('lunch-on', view === 'lunch');
     document.body.classList.toggle('quotes-on', view === 'quotes');
-    if (view === 'lunch') fitLunch();
+    if (view === 'lunch') {
+      var g = lunch && savedGrid(lunch.url);
+      if (lunchImg) showLunch(lunchImg, lunch, savedBox(lunch.url), g || null);
+      fitLunch();
+    }
     current = view;
     // render after the section is visible so layout-dependent views measure correctly
     if (view === 'weather') renderWeather();
