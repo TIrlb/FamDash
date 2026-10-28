@@ -86,6 +86,14 @@
   .li .sub { color: var(--muted); font-size: 12px; font-weight: 700; }
   .li .x { border: 0; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; padding: 2px 6px; }
   .card2 { background: var(--card); border-radius: 16px; padding: 14px; display: grid; gap: 10px; }
+  .setup { background: linear-gradient(160deg, rgba(255,197,107,.18), rgba(255,255,255,.03)); border: 1px solid rgba(255,197,107,.35); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; }
+  .setup b { display: block; font-size: 17px; margin-bottom: 6px; }
+  .setup ol { margin: 0 0 10px 20px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+  .setup ol li.done { text-decoration: line-through; opacity: .6; }
+  .kidrow { display: grid; grid-template-columns: 1fr 72px 72px 34px; gap: 8px; align-items: end; margin-bottom: 10px; }
+  .kidrow .x { height: 44px; border: 0; background: transparent; color: var(--muted); font-size: 24px; }
+  .locline { font-size: 14px; color: var(--muted); font-weight: 700; }
+  .locline b { color: var(--ink); }
   /* floating save bar */
   .savebar {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; max-width: 560px; margin: 0 auto;
@@ -124,6 +132,11 @@
 </div>
 
 <main id="main" style="display:none">
+  <div class="setup" id="setupCard" style="display:none">
+    <b>Finish setting up your dashboard</b>
+    <ol id="setupSteps"></ol>
+    <button class="btn small primary" id="setupGo" style="width:100%">Open settings</button>
+  </div>
   <div class="kids" id="kids"></div>
 
   <h2>Show on screen</h2>
@@ -163,8 +176,18 @@
   <details id="settings">
     <summary>Settings</summary>
     <div class="set">
+      <h3>Location &amp; weather</h3>
+      <div class="row2">
+        <label>ZIP code<input type="text" id="zip" inputmode="numeric" maxlength="5" autocomplete="postal-code" placeholder="e.g. 46530"></label>
+        <button class="btn small ghost" id="zipLookup" style="align-self:end">Look up</button>
+      </div>
+      <div class="locline" id="locLine"></div>
+      <label>Temperature
+        <select id="units"><option value="F">°F (mph)</option><option value="C">°C (km/h)</option></select></label>
+
       <h3>Kids</h3>
       <div id="kidSet"></div>
+      <button class="btn small ghost" id="addKid" style="width:100%">+ Add a kid</button>
 
       <h3>Display</h3>
       <div class="row2">
@@ -174,6 +197,7 @@
         <label>Max events<input type="number" id="maxEvents" min="3" max="40" inputmode="numeric"></label>
       </div>
       <label>School lunch page<input type="text" id="lunchUrl" inputmode="url" autocomplete="off"></label>
+      <label>Flyer image folder (advanced, optional)<input type="text" id="lunchFilesBase" inputmode="url" autocomplete="off" placeholder="https://files.ecatholic.com/1234/pictures/"></label>
       <label>Lunch image URL (fallback)<input type="text" id="lunchImageUrl" inputmode="url" autocomplete="off" placeholder="https://files.ecatholic.com/…"></label>
       <p class="note" style="margin-top:-6px">The school site blocks automated fetches, so the backend guesses this month's file name ("October lunch.png"). If the menu doesn't update, open the lunch page, long-press the menu image → Copy image address, paste here, and save.</p>
       <div id="viewChecks"></div>
@@ -264,6 +288,7 @@
     state = s;
     renderKids();
     renderTeams();
+    renderSetup();
     $('holdNote').textContent = 'Holds for ' + s.settings.holdSeconds + 's, then resumes cycling.';
   }
 
@@ -396,6 +421,21 @@
       .catch(function (err) { status('⚠ ' + err.message, true); });
   });
 
+  /* ---------- "finish setting up" checklist ---------- */
+  function renderSetup() {
+    var st = state.settings;
+    var steps = [
+      { done: !!st.location, text: 'Add your ZIP code (weather and radar)' },
+      { done: !state.kids.some(function (k) { return /^Kid \d$/.test(k.name); }), text: 'Name the kids (and add or remove jars)' },
+      { done: !!(st.lunchUrl || st.lunchImageUrl || st.lunchFilesBase), text: 'School lunch page (optional)' },
+      { done: (st.sportsTeams || []).length > 0, text: 'Favorite teams (optional)' }
+    ];
+    var required = steps.slice(0, 2).every(function (x) { return x.done; });
+    $('setupCard').style.display = required ? 'none' : '';
+    $('setupSteps').innerHTML = steps.map(function (x) { return '<li' + (x.done ? ' class="done"' : '') + '>' + x.text + '</li>'; }).join('');
+  }
+  $('setupGo').onclick = function () { $('settings').open = true; $('zip').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+
   /* ---------- teams to follow ---------- */
   var LEAGUE_SHORT = { 'football/college-football': 'CFB', 'basketball/mens-college-basketball': 'MBB', 'basketball/womens-college-basketball': 'WBB',
     'football/nfl': 'NFL', 'basketball/nba': 'NBA', 'basketball/wnba': 'WNBA', 'baseball/mlb': 'MLB' };
@@ -455,7 +495,7 @@
   /* ---------- save bar: one Save for every settings section, plus feedback for instant saves ---------- */
   // Unsaved edits in a section are never overwritten by a background refresh.
   var dirty = { kids: false, display: false, calendars: false };
-  var DISPLAY_FIELDS = ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents', 'lunchUrl', 'lunchImageUrl', 'jarMode', 'jarTitle', 'jarGoal', 'fantasyLeagueId'];
+  var DISPLAY_FIELDS = ['viewSeconds', 'holdSeconds', 'daysAhead', 'maxEvents', 'lunchUrl', 'lunchImageUrl', 'lunchFilesBase', 'jarMode', 'jarTitle', 'jarGoal', 'fantasyLeagueId', 'units'];
   function anyDirty() { return dirty.kids || dirty.display || dirty.calendars; }
   function markDirty(k) { dirty[k] = true; refreshBar(); }
   $('kidSet').addEventListener('input', function () { markDirty('kids'); });
@@ -528,6 +568,7 @@
         var st = { views: views, fantasyLeagueId: $('fantasyLeagueId').value.trim(),
           scoreLeagues: Array.prototype.map.call(document.querySelectorAll('#scoreLeagueChecks input:checked'), function (i) { return i.value; }) };
         DISPLAY_FIELDS.forEach(function (k) { if (k !== 'fantasyLeagueId') st[k] = $(k).value; });
+        if (pendingLoc) st.location = pendingLoc;
         return F.post('setSettings', { settings: st });
       }).then(function (r) { last = r; });
       if (was.calendars) p = p.then(function () {
@@ -535,6 +576,7 @@
         return F.post('setCalendars', { ids: ids });
       }).then(function (r) { last = r; });
       return p.then(function () {
+        pendingLoc = null;
         dirty = { kids: false, display: false, calendars: false };
         if (last) apply(last.state);
       });
@@ -553,13 +595,48 @@
   }
 
   function renderKidFields() {
+    var many = state.kids.length > 1;
     $('kidSet').innerHTML = state.kids.map(function (k) {
-      return '<div class="row" style="margin-bottom:10px">' +
+      return '<div class="kidrow">' +
         '<label>Name<input type="text" id="kn-' + k.id + '" value="' + esc(k.name) + '" maxlength="24"></label>' +
         '<label>Goal<input type="number" id="kg-' + k.id + '" value="' + k.goal + '" min="5" max="200" inputmode="numeric"></label>' +
-        '<label>Count<input type="number" id="kc-' + k.id + '" value="' + k.count + '" min="0" max="999" inputmode="numeric"></label></div>';
+        '<label>Count<input type="number" id="kc-' + k.id + '" value="' + k.count + '" min="0" max="999" inputmode="numeric"></label>' +
+        (many ? '<button class="x" data-rmkid="' + k.id + '" aria-label="Remove ' + esc(k.name) + '">×</button>' : '<span></span>') + '</div>';
     }).join('');
+    $('addKid').style.display = state.kids.length >= 4 ? 'none' : '';
   }
+  // Adding/removing a kid saves right away (like teams); name edits go through the Save bar.
+  $('addKid').onclick = function () {
+    if (busy || dirty.kids) { if (dirty.kids) bar('err', 'Save or discard the kid edits first'); return; }
+    withFeedback(function () { return F.post('addKid', {}).then(function (r) { apply(r.state); }); }, { type: 'refresh' }).catch(function () {});
+  };
+  $('kidSet').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-rmkid]'); if (!b || busy) return;
+    var k = state.kids.filter(function (x) { return x.id === b.getAttribute('data-rmkid'); })[0];
+    if (!k || !window.confirm('Remove ' + k.name + ' and their jar?')) return;
+    dirty.kids = false;
+    withFeedback(function () { return F.post('removeKid', { kidId: k.id }).then(function (r) { apply(r.state); }); }, { type: 'refresh' }).catch(function () {});
+  });
+
+  /* ---------- location: ZIP -> town, coordinates, nearest NWS radar ---------- */
+  var pendingLoc = null;
+  function locText(L) { return L ? '<b>' + esc(L.name || '') + '</b>' + (L.radar ? ' · radar ' + esc(L.radar) : ' · no US radar') : 'Not set yet. Weather is hidden until you add a ZIP.'; }
+  $('zipLookup').onclick = function () {
+    var zip = $('zip').value.trim();
+    if (!/^\d{5}$/.test(zip)) { $('locLine').textContent = 'Enter a 5-digit US ZIP code.'; return; }
+    $('locLine').textContent = 'Looking up…';
+    fetch('https://api.zippopotam.us/us/' + zip).then(function (r) { if (!r.ok) throw new Error('ZIP not found'); return r.json(); }).then(function (j) {
+      var pl = j.places[0];
+      var L = { zip: zip, name: pl['place name'] + ', ' + pl['state abbreviation'], lat: +pl.latitude, lon: +pl.longitude, radar: '', tz: '' };
+      return fetch('https://api.weather.gov/points/' + L.lat.toFixed(4) + ',' + L.lon.toFixed(4)).then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; }).then(function (p) {
+          if (p && p.properties) { L.radar = p.properties.radarStation || ''; L.tz = p.properties.timeZone || ''; }
+          pendingLoc = L;
+          $('locLine').innerHTML = locText(L) + ' <span style="color:var(--warm)">· unsaved</span>';
+          markDirty('display');
+        });
+    }).catch(function (e) { $('locLine').textContent = e.message; });
+  };
 
   function renderDisplayFields() {
     var st = state.settings;
@@ -568,6 +645,9 @@
     $('jarTitle').value = st.jarTitle || 'Family jar';
     $('jarGoal').value = st.jarGoal || 100;
     $('fantasyLeagueId').value = st.fantasyLeagueId || '';
+    $('units').value = st.units === 'C' ? 'C' : 'F';
+    $('lunchFilesBase').value = st.lunchFilesBase || '';
+    if (!pendingLoc) { $('zip').value = (st.location && st.location.zip) || ''; $('locLine').innerHTML = locText(st.location); }
     var sl = Array.isArray(st.scoreLeagues) ? st.scoreLeagues : ['football/college-football', 'football/nfl', 'basketball/nba', 'baseball/mlb'];
     $('scoreLeagueChecks').innerHTML = Object.keys(LEAGUE_NAMES).map(function (lg) {
       return '<label class="check"><input type="checkbox" value="' + lg + '"' + (sl.indexOf(lg) >= 0 ? ' checked' : '') + '>' + LEAGUE_NAMES[lg] + '</label>';

@@ -5,10 +5,10 @@ Family wall dashboard for an old tablet, driven from a phone controller. It cycl
 | View | Source |
 |---|---|
 | Agenda | Google Calendar (family + any subscribed calendars) |
-| Marble jars | Backend state; side by side or one combined family jar |
+| Marble jars | Backend state; 1–4 kids side by side, or one combined family jar |
 | Photo | Drive folder "FamDash Photos" |
 | Lunch menu | School lunch flyer, split into this week's days (Mon–Wed over Thu–Fri + daily options) by detecting the flyer's grid; full month if the grid isn't found |
-| Weather | Open-Meteo (now, 10-hour, 5-day) + NWS KIWX radar loop |
+| Weather | Open-Meteo (now, 10-hour, 5-day) + the NWS radar loop for the family's ZIP code |
 | Scores | ESPN scoreboards: the day's top games in the chosen leagues (+ last night's finals before 11am); favorite teams featured the day before, day of, and morning after their games |
 | Fantasy | ESPN fantasy API (public league): matchups with each roster's top 3 performers, standings; holds last week's finals on Tue/Wed |
 | Quote wall | Drive folder "FamDash Quotes" |
@@ -56,7 +56,18 @@ From **Settings → Links**, send the controller link to the other parent and th
    - **iPad:** Settings → Display → Auto-Lock **Never**, then Guided Access.
    - **Android:** Fully Kiosk Browser (free tier) or screen-timeout max + screen pinning.
 
-### 4. Calendars
+### 4. Family settings
+Everything family-specific lives in the controller's Settings (stored in the backend), so the same code serves any family. A fresh backend starts with two jars named "Kid 1" and "Kid 2", no location, and no lunch or fantasy league. Until the ZIP and kid names are set, the controller shows a **Finish setting up** card.
+
+| Setting | Notes |
+|---|---|
+| ZIP code | The controller looks it up with zippopotam.us and api.weather.gov, then stores the town, coordinates, radar station and time zone. Weather is hidden until this is set. |
+| Units | °F or °C |
+| Kids | 1–4 jars. Add and remove save right away; name, goal and count edits go through the Save bar. |
+| School lunch | Lunch page URL, an optional files folder base for guessing the flyer's file name, or a direct image URL |
+| Teams, scores leagues, fantasy league ID | Optional |
+
+### 5. Calendars
 Subscribe to any team or school calendar in Google Calendar under the backend account. Then go to Controller → Settings → Calendars → Load and tick the ones you want.
 
 ## Updating the backend

@@ -34,11 +34,13 @@ function setup() {
 
 const ALL_VIEWS = ['calendar', 'jars', 'photo', 'lunch', 'weather', 'sports', 'fantasy', 'quotes', 'gratitude', 'today'];
 
+const KID_COLORS = ['#2f7fe0', '#ef6c2f', '#3fbf68', '#c05ec7'];
+
 function defaultState_() {
   return {
     kids: [
-      { id: 'k1', name: 'Ben', count: 0, goal: 50, color: '#2f7fe0' },
-      { id: 'k2', name: 'Nate', count: 0, goal: 50, color: '#ef6c2f' }
+      { id: 'k1', name: 'Kid 1', count: 0, goal: 50, color: KID_COLORS[0] },
+      { id: 'k2', name: 'Kid 2', count: 0, goal: 50, color: KID_COLORS[1] }
     ],
     calendars: [CalendarApp.getDefaultCalendar().getId()],
     settings: defaultSettings_()
@@ -52,15 +54,18 @@ function defaultSettings_() {
       holdSeconds: 30,
       daysAhead: 30,
       maxEvents: 14,
-      lunchUrl: 'https://stpiuscatholicschool.net/lunch',
-      lunchFilesBase: 'https://files.ecatholic.com/2970/pictures/',
+      // Everything family-specific starts empty and is set from the controller.
+      location: null,            // { zip, name, lat, lon, radar, tz } from the controller's ZIP lookup
+      units: 'F',
+      lunchUrl: '',
+      lunchFilesBase: '',
       lunchImageUrl: '',
       jarMode: 'separate',
       jarGoal: 100,
       jarTitle: 'Family jar',
       sportsTeams: [],
       scoreLeagues: ['football/college-football', 'football/nfl', 'basketball/nba', 'baseball/mlb'],
-      fantasyLeagueId: '1198389660'
+      fantasyLeagueId: ''
   };
 }
 
@@ -213,6 +218,8 @@ function doPost(e) {
     switch (body.action) {
       case 'adjust': return json_({ ok: true, state: withLock_(function () { return adjust_(body.kidId, Number(body.delta) || 0); }) });
       case 'setKid': return json_({ ok: true, state: withLock_(function () { return setKid_(body); }) });
+      case 'addKid': return json_({ ok: true, state: withLock_(function () { return addKid_(body); }) });
+      case 'removeKid': return json_({ ok: true, state: withLock_(function () { return removeKid_(body.kidId); }) });
       case 'setSettings': return json_({ ok: true, state: withLock_(function () { return setSettings_(body.settings || {}); }) });
       case 'setCalendars': return json_({ ok: true, state: withLock_(function () { return setCalendars_(body.ids || []); }) });
       case 'upload': return json_(Object.assign({ ok: true }, upload_(body)));
@@ -251,6 +258,28 @@ function setKid_(b) {
   return publicState_(s);
 }
 
+function addKid_(b) {
+  const s = getState_();
+  if (s.kids.length >= 4) throw new Error('4 kids max');
+  let n = 1;
+  while (s.kids.some(function (k) { return k.id === 'k' + n; })) n++;
+  const used = s.kids.map(function (k) { return k.color; });
+  const color = KID_COLORS.filter(function (c) { return used.indexOf(c) < 0; })[0] || KID_COLORS[0];
+  const name = String(b.name || '').trim().slice(0, 24) || ('Kid ' + n);
+  s.kids.push({ id: 'k' + n, name: name, count: 0, goal: 50, color: color });
+  saveState_(s);
+  return publicState_(s);
+}
+
+function removeKid_(id) {
+  const s = getState_();
+  if (s.kids.length <= 1) throw new Error('keep at least one');
+  findKid_(s, id);
+  s.kids = s.kids.filter(function (k) { return k.id !== id; });
+  saveState_(s);
+  return publicState_(s);
+}
+
 function setSettings_(n) {
   const s = getState_();
   const st = s.settings;
@@ -262,7 +291,7 @@ function setSettings_(n) {
   if (n.holdSeconds != null) st.holdSeconds = Math.max(5, Math.min(3600, Number(n.holdSeconds) || st.holdSeconds));
   if (n.daysAhead != null) st.daysAhead = Math.max(1, Math.min(120, Number(n.daysAhead) || st.daysAhead));
   if (n.maxEvents != null) st.maxEvents = Math.max(3, Math.min(40, Number(n.maxEvents) || st.maxEvents));
-  if (typeof n.lunchUrl === 'string' && /^https:\/\//.test(n.lunchUrl.trim())) {
+  if (typeof n.lunchUrl === 'string' && (n.lunchUrl.trim() === '' || /^https:\/\//.test(n.lunchUrl.trim()))) {
     st.lunchUrl = n.lunchUrl.trim();
     CacheService.getScriptCache().remove('lunch');
   }
@@ -276,6 +305,23 @@ function setSettings_(n) {
   if (Array.isArray(n.scoreLeagues)) st.scoreLeagues = n.scoreLeagues.filter(function (l) { return !!LEAGUES[l]; });
   if (typeof n.fantasyLeagueId === 'string' && /^\d*$/.test(n.fantasyLeagueId.trim())) {
     st.fantasyLeagueId = n.fantasyLeagueId.trim();
+  }
+  if (n.location === null) st.location = null;
+  else if (n.location && typeof n.location === 'object') {
+    const L = n.location, lat = Number(L.lat), lon = Number(L.lon);
+    if (isFinite(lat) && isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+      st.location = {
+        zip: String(L.zip || '').slice(0, 10), name: String(L.name || '').slice(0, 60),
+        lat: Math.round(lat * 1e4) / 1e4, lon: Math.round(lon * 1e4) / 1e4,
+        radar: /^[A-Z0-9]{3,4}$/.test(String(L.radar || '')) ? String(L.radar) : '',
+        tz: String(L.tz || '').slice(0, 40)
+      };
+    }
+  }
+  if (n.units === 'F' || n.units === 'C') st.units = n.units;
+  if (typeof n.lunchFilesBase === 'string' && (n.lunchFilesBase === '' || /^https:\/\//.test(n.lunchFilesBase.trim()))) {
+    st.lunchFilesBase = n.lunchFilesBase.trim();
+    CacheService.getScriptCache().remove('lunch');
   }
   if (n.jarMode === 'separate' || n.jarMode === 'combined') st.jarMode = n.jarMode;
   if (n.jarGoal != null) st.jarGoal = Math.max(5, Math.min(400, Math.round(Number(n.jarGoal)) || st.jarGoal));
@@ -329,11 +375,12 @@ function lunch_(fresh) {
     if (hit) return JSON.parse(hit);
   }
   const st = getState_().settings;
+  if (!st.lunchUrl && !st.lunchImageUrl && !st.lunchFilesBase) return { url: null };   // not set up: view is skipped
   const notes = [];
   // 1. The page itself. The school site sits behind a Cloudflare bot challenge, so this
   //    usually 403s from Google's servers; kept in case that's ever relaxed.
   let out = null;
-  try {
+  if (st.lunchUrl) try {
     const res = UrlFetchApp.fetch(st.lunchUrl, { muteHttpExceptions: true, followRedirects: true });
     if (res.getResponseCode() === 200) {
       const pick = pickLunchImage_(res.getContentText());

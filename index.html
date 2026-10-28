@@ -82,6 +82,8 @@
   .kid .name { font-family: 'Fredoka', sans-serif; font-size: 6vh; margin-bottom: 1.4vh; display: flex; align-items: center; gap: .6vw; }
   .kid .jar { width: 100%; }
   .kid.solo { width: 46vw; max-width: 47vh; }
+  #v-jars.n3 { gap: 3vw; } #v-jars.n3 .kid { width: 27vw; max-width: 40vh; }
+  #v-jars.n4 { gap: 2vw; } #v-jars.n4 .kid { width: 21vw; max-width: 34vh; } #v-jars.n4 .kid .name { font-size: 4.6vh; }
   .jar-svg { width: 100%; height: auto; display: block; overflow: visible; filter: drop-shadow(0 18px 28px rgba(0,0,0,.35)); }
   .jar-goal { font: 700 13px 'Nunito', sans-serif; fill: rgba(255,255,255,.55); }
   .kid .count { margin-top: 1.8vh; font-size: 3vh; color: var(--muted); font-weight: 700; }
@@ -311,7 +313,7 @@
       <div class="wx-hours card" id="wxHours"></div>
       <div class="wx-days card" id="wxDays"></div>
     </div>
-    <div class="wx-radar card"><div class="img" id="wxRadar"></div><div class="cap" id="wxRadarCap">Radar · NWS North Webster (KIWX)</div></div>
+    <div class="wx-radar card"><div class="img" id="wxRadar"></div><div class="cap" id="wxRadarCap">Radar</div></div>
   </div>
 </section>
 
@@ -656,6 +658,7 @@
 
   function loadLunch() {
     return F.get('lunch').then(function (r) {
+      if (!r.url) { lunch = null; lunchImg = null; return; }   // no lunch page set up: view is skipped
       if (lunch && lunch.url === r.url) return;
       return loadImg(r.url, false).then(function (im) {
         lunch = r; lunchImg = im;
@@ -717,7 +720,9 @@
   window.addEventListener('resize', fitLunch);
 
   /* ---------- weather (Open-Meteo: free, no key, CORS-enabled) ---------- */
-  var WX_LAT = 41.7531, WX_LON = -86.1106;   // Granger, IN
+  // Location comes from the controller's ZIP lookup (settings.location); no location = no weather.
+  function wxLoc() { return state && state.settings && state.settings.location; }
+  function wxUnits() { return (state && state.settings && state.settings.units) === 'C' ? 'C' : 'F'; }
   var WX_ICONS = {
     sun: '<circle cx="24" cy="24" r="9" fill="#ffc94a"/><g stroke="#ffc94a" stroke-width="3.4" stroke-linecap="round"><path d="M24 4v5M24 39v5M4 24h5M39 24h5M9.9 9.9l3.5 3.5M34.6 34.6l3.5 3.5M9.9 38.1l3.5-3.5M34.6 13.4l3.5-3.5"/></g>',
     moon: '<path d="M30.5 8.5a15.5 15.5 0 1 0 9 26.6A13 13 0 0 1 30.5 8.5z" fill="#e8e3c9"/>',
@@ -746,11 +751,14 @@
     71: 'Light snow', 73: 'Snow', 75: 'Heavy snow', 77: 'Snow grains', 80: 'Showers', 81: 'Showers', 82: 'Heavy showers',
     85: 'Snow showers', 86: 'Snow showers', 95: 'Thunderstorms', 96: 'Thunderstorms', 99: 'Thunderstorms' };
   function loadWeather() {
-    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + WX_LAT + '&longitude=' + WX_LON +
+    var loc = wxLoc();
+    if (!loc) { wxData = null; $('wx').innerHTML = ''; return Promise.resolve(); }
+    var C = wxUnits() === 'C';
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + loc.lat + '&longitude=' + loc.lon +
       '&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m' +
       '&hourly=temperature_2m,weather_code,precipitation_probability,is_day' +
       '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
-      '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=6';
+      (C ? '&temperature_unit=celsius&wind_speed_unit=kmh' : '&temperature_unit=fahrenheit&wind_speed_unit=mph') + '&timezone=auto&forecast_days=6';
     return fetch(url).then(function (r) { return r.json(); }).then(function (j) {
       var c = j.current;
       if (!c) return;
@@ -769,7 +777,7 @@
     $('wxNow').innerHTML = icon(c.weather_code, c.is_day === 1) +
       '<div><div class="big">' + Math.round(c.temperature_2m) + '°</div></div>' +
       '<div><div class="desc">' + (WX_WORDS[c.weather_code] || '') + '</div>' +
-      '<div class="meta">Feels like ' + Math.round(c.apparent_temperature) + '° · Wind ' + Math.round(c.wind_speed_10m) + ' mph</div>' +
+      '<div class="meta">Feels like ' + Math.round(c.apparent_temperature) + '° · Wind ' + Math.round(c.wind_speed_10m) + (wxUnits() === 'C' ? ' km/h' : ' mph') + '</div>' +
       '<div class="meta">High ' + Math.round(d.temperature_2m_max[0]) + '° · Low ' + Math.round(d.temperature_2m_min[0]) + '°</div></div>';
 
     var now = new Date(), start = 0;
@@ -798,12 +806,15 @@
     }
     $('wxDays').innerHTML = rows.join('');
     // NWS radar loop (animated GIF); cache-busted every 10 minutes
-    var src = 'https://radar.weather.gov/ridge/standard/KIWX_loop.gif?t=' + Math.floor(Date.now() / 600000);
+    var loc = wxLoc() || {};
+    if (!loc.radar) { $('wxRadar').parentNode.style.display = 'none'; return; }   // NWS radar covers the US only
+    $('wxRadar').parentNode.style.display = '';
+    var src = 'https://radar.weather.gov/ridge/standard/' + loc.radar + '_loop.gif?t=' + Math.floor(Date.now() / 600000);
     if ($('wxRadar').getAttribute('data-src') !== src) {
       var im = new Image();
       im.onload = function () {
         $('wxRadar').style.backgroundImage = 'url("' + src + '")'; $('wxRadar').setAttribute('data-src', src);
-        $('wxRadarCap').textContent = 'Radar · NWS North Webster (KIWX) · ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        $('wxRadarCap').textContent = 'Radar · NWS ' + loc.radar + (loc.name ? ' near ' + loc.name : '') + ' · ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
       };
       im.src = src;
     }
@@ -1103,6 +1114,7 @@
     var sig = jars.map(function (k) { return k.id; }).join(',');
     if (root.getAttribute('data-sig') !== sig) {
       root.setAttribute('data-sig', sig);
+      ['n1', 'n2', 'n3', 'n4'].forEach(function (c) { root.classList.toggle(c, c === 'n' + jars.length); });
       root.innerHTML = jars.map(function (k) {
         return '<div class="kid' + (jars.length === 1 ? ' solo' : '') + '" id="kid-' + k.id + '"><div class="name"></div><div class="jar"></div><div class="count"></div></div>';
       }).join('');
@@ -1254,7 +1266,7 @@
         // re-render what's on screen with the new settings (photos/notes keep their place)
         if (current === 'calendar') renderCalendar();
         if (current === 'jars') renderJars();
-        return Promise.all([loadSports(), loadFantasy()]);
+        return Promise.all([loadSports(), loadFantasy(), loadWeather()]);
       })]).then(function () { ack(msg); });
     }
     else if (msg.type === 'photos') {
@@ -1286,7 +1298,9 @@
 
   /* ---------- boot ---------- */
   Promise.all([loadState().then(function () { return Promise.all([loadSports(), loadFantasy()]); }),
-    loadEvents(), albums.photo.loadList(), albums.quotes.loadList(), loadLunch(), loadWeather(), loadNotes(), loadToday()]).then(function () {
+    loadEvents(), albums.photo.loadList(), albums.quotes.loadList(), loadLunch(), loadNotes(), loadToday()]).then(function () {
+    return loadWeather();
+  }).then(function () {
     if (state) {
       state.kids.forEach(function (k) { shownCounts[k.id] = k.count; });
       F.listen(state.ntfyTopic, onMessage);

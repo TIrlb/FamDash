@@ -109,6 +109,7 @@
       { id: 'g1', who: 'Emma', text: 'That Leo let me pick the movie on Friday.', created: new Date(Date.now() - 86400000).toISOString() },
       { id: 'g2', who: 'Mom', text: 'A warm fall afternoon and nobody had anywhere to be.', created: new Date(Date.now() - 2 * 86400000).toISOString() },
       { id: 'g3', who: 'Leo', text: 'Grandma\'s chocolate chip cookies.', created: new Date(Date.now() - 3 * 86400000).toISOString() }];
+    if (state.settings.location === undefined) { state.settings.location = { zip: '43215', name: 'Columbus, OH', lat: 39.9612, lon: -82.9988, radar: 'KILN', tz: 'America/New_York' }; state.settings.units = 'F'; }
     if (!state.settings.jarMode) { state.settings.jarMode = 'separate'; state.settings.jarGoal = 100; state.settings.jarTitle = 'Family jar'; }
     function save() { try { localStorage.setItem(KEYD, JSON.stringify(state)); } catch (e) {} }
     function clone() { return JSON.parse(JSON.stringify(state)); }
@@ -333,6 +334,12 @@
         });
         if (action === 'setSettings') Object.assign(state.settings, b.settings);
         if (action === 'setCalendars') state.calendars = b.ids;
+        if (action === 'addKid' && state.kids.length < 4) {
+          var n = 1; while (state.kids.some(function (k) { return k.id === 'k' + n; })) n++;
+          var cols = ['#2f7fe0', '#ef6c2f', '#3fbf68', '#c05ec7'], used = state.kids.map(function (k) { return k.color; });
+          state.kids.push({ id: 'k' + n, name: 'Kid ' + n, count: 0, goal: 50, color: cols.filter(function (c) { return used.indexOf(c) < 0; })[0] || cols[0] });
+        }
+        if (action === 'removeKid' && state.kids.length > 1) state.kids = state.kids.filter(function (k) { return k.id !== b.kidId; });
         if (action === 'addGratitude') state.gratitude.unshift({ id: 'g' + Date.now(), who: b.who || '', text: b.text, created: new Date().toISOString() });
         if (action === 'deleteGratitude') state.gratitude = state.gratitude.filter(function (g) { return g.id !== b.id; });
         save();
