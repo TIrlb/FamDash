@@ -390,7 +390,7 @@ function lunch_(fresh) {
   } catch (e) { notes.push('page error'); }
   // 2. Guess this month's file from the naming the school has used ("October lunch.png").
   if (!out) {
-    const g = guessLunchImage_(st.lunchFilesBase);
+    const g = guessLunchImage_(st.lunchFilesBase || lastLunchBase_());
     if (g) out = { url: g, name: decodeURIComponent(g.split('/').pop()), source: 'guess' };
     else notes.push('no guess matched');
   }
@@ -406,6 +406,16 @@ function lunch_(fresh) {
   if (out.source !== 'manual') PROPS.setProperty('LUNCH_LAST', JSON.stringify({ url: out.url, name: out.name, source: 'last good' }));
   cache.put('lunch', JSON.stringify(out), 3 * 3600);
   return out;
+}
+
+// Folder base of the last flyer that worked (".../pictures/2026/10/x.png" -> ".../pictures/"),
+// so guessing keeps working when no files base has been entered.
+function lastLunchBase_() {
+  try {
+    const last = JSON.parse(PROPS.getProperty('LUNCH_LAST') || 'null');
+    const m = last && /^(https:\/\/.+\/)\d{4}\/\d{1,2}\/[^\/]+$/.exec(last.url);
+    return m ? m[1] : '';
+  } catch (e) { return ''; }
 }
 
 function guessLunchImage_(base) {
