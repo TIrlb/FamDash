@@ -408,6 +408,18 @@
   }
   tick(); setInterval(tick, 10000);
 
+  // New day -> reload once it's past 3am. Checked on every clock tick rather than with one long timer,
+  // because Android freezes timers while the tablet sleeps and a 3am setTimeout can silently never fire.
+  var bootDay = (function () { var d = new Date(); return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); })();
+  setInterval(function () {
+    var d = new Date(), k = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+    if (k !== bootDay && d.getHours() >= 3) location.reload();
+  }, 30000);
+  document.addEventListener('visibilitychange', function () {
+    var d = new Date(), k = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+    if (!document.hidden && k !== bootDay && d.getHours() >= 3) location.reload();
+  });
+
   /* ---------- data ---------- */
   function loadState() {
     return F.get('state').then(function (r) {
@@ -1172,7 +1184,9 @@
     if (view === 'fantasy' && !(fantasyData && fantasyData.league && fantasyData.matchups && fantasyData.matchups.length)) return false;
     if (view === 'gratitude' && !showNote()) return false;
     if (view === 'today' && !(todayData && (todayData.days.length || todayData.events.length))) return false;
-    if (view === 'today') { if (todayData.date !== todayKey()) loadToday(); renderToday(true); }
+    // never show yesterday's page: refresh in the background and catch it on the next cycle
+    if (view === 'today' && todayData.date !== todayKey()) { loadToday(); return false; }
+    if (view === 'today') renderToday(true);
     if (view === 'calendar') renderCalendar();
     if (view === 'jars') renderJars();
     var sections = document.querySelectorAll('.view');

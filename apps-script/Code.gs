@@ -465,24 +465,33 @@ const NOT_US = /\((UK|Australia|Canada|Ireland|India|Scotland|Wales|NZ|New Zeala
 
 function today_() {
   const tz = Session.getScriptTimeZone() || 'America/Indiana/Indianapolis';
-  const key = 'days:' + Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const ymd = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const key = 'days:' + ymd;
   const cache = CacheService.getScriptCache();
   const hit = cache.get(key);
   if (hit) return JSON.parse(hit);
-  let days = [];
+  let days = [], current = false;
   try {
     const r = UrlFetchApp.fetch('https://www.checkiday.com/rss.php', { muteHttpExceptions: true, followRedirects: true });
     if (r.getResponseCode() === 200) {
       const xml = r.getContentText();
+      // Checkiday rolls over at midnight Central; only trust the feed once its date matches ours.
+      const built = (xml.match(/<lastBuildDate>([^<]+)<\/lastBuildDate>/) || xml.match(/<pubDate>([^<]+)<\/pubDate>/) || [])[1];
+      if (built) {
+        const m = built.match(/(\d{1,2}) (\w{3}) (\d{4})/);
+        const MON = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 };
+        if (m) current = (m[3] + '-' + ('0' + MON[m[2]]).slice(-2) + '-' + ('0' + m[1]).slice(-2)) === ymd;
+      }
       const re = /<item>[\s\S]*?<title>([\s\S]*?)<\/title>/g;
-      let m;
-      while ((m = re.exec(xml))) {
-        const t = m[1].replace(/<!\[CDATA\[|\]\]>/g, '').replace(/&amp;/g, '&').replace(/&#0?39;/g, "'").replace(/&quot;/g, '"').trim();
+      let it;
+      while ((it = re.exec(xml))) {
+        const t = it[1].replace(/<!\[CDATA\[|\]\]>/g, '').replace(/&apos;|&#0?39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim();
         if (t && !NOT_FOR_KIDS.test(t) && !NOT_US.test(t)) days.push(t);
       }
     }
   } catch (e) { /* leave days empty; the display still shows history */ }
+  if (!current) days = [];            // yesterday's list is worse than none; the display retries
   const out = { days: days.slice(0, 14) };
-  cache.put(key, JSON.stringify(out), days.length ? 21600 : 600);   // 6h when good, retry in 10 min when empty
+  cache.put(key, JSON.stringify(out), days.length ? 21600 : 600);   // 6h when good, retry in 10 min otherwise
   return out;
 }
