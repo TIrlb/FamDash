@@ -491,7 +491,7 @@ function today_() {
     }
   } catch (e) { /* leave days empty; the display still shows history */ }
   if (!current) days = [];            // yesterday's list is worse than none; the display retries
-  const out = { days: days.slice(0, 14) };
+  const out = { days: days.slice(0, 14), date: current ? ymd : null };   // display only trusts a matching date
   cache.put(key, JSON.stringify(out), days.length ? 21600 : 600);   // 6h when good, retry in 10 min otherwise
   return out;
 }

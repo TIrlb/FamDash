@@ -300,7 +300,7 @@
           }) };
         else if (action === 'photos') r = { ok: true, photos: (p.kind === 'quotes' ? quotes : photos).map(function (x) { return { id: x.id }; }) };
         else if (action === 'gratitude') r = { ok: true, notes: state.gratitude.slice() };
-        else if (action === 'today') r = { ok: true, days: ['National Potato Day', 'National Civics Day', 'National Parmigiano Reggiano Day', 'Navy Day', 'Cranky Co-Workers Day', 'Vote Early Day'] };
+        else if (action === 'today') r = { ok: true, date: (function () { var n = new Date(); return n.getFullYear() + '-' + ('0' + (n.getMonth() + 1)).slice(-2) + '-' + ('0' + n.getDate()).slice(-2); })(), days: ['National Potato Day', 'National Civics Day', 'National Parmigiano Reggiano Day', 'Navy Day', 'Cranky Co-Workers Day', 'Vote Early Day'] };
         else if (action === 'teams') r = { ok: true, teams: (DEMO_TEAMS[p.league] || []).map(function (t) { return { id: t[0], name: t[1] }; }) };
         else if (action === 'sports') r = { ok: true, teams: state.settings.sportsTeams.map(function (t) {
           var d = SPORTS[t.league + ':' + t.id];

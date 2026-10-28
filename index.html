@@ -947,7 +947,7 @@
     if (todayData && todayData.date === key && todayData.complete) return Promise.resolve();
     var d = new Date(), mm = ('0' + (d.getMonth() + 1)).slice(-2), dd = ('0' + d.getDate()).slice(-2);
     var cached = null;
-    try { cached = JSON.parse(localStorage.getItem('famdash.today') || 'null'); } catch (e) {}
+    try { cached = JSON.parse(localStorage.getItem('famdash.today2') || 'null'); } catch (e) {}
     if (cached && cached.date === key && cached.complete) { todayData = cached; return Promise.resolve(); }
     var base = 'https://en.wikipedia.org/api/rest_v1/feed/onthisday/';
     function wiki(kind) { return fetch(base + kind + '/' + mm + '/' + dd).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }); }
@@ -958,7 +958,15 @@
         return { year: e.year, text: e.text, img: img, small: pg ? pg.thumbnail.source : '', sel: !!sel };
       });
     }
-    var days = F.get('today').then(function (r) { return r.days || []; }).catch(function () { return null; });
+    // The backend says which day its list is for. Only a list dated today counts as final; an older
+    // backend (no date) is shown but re-checked every 30 minutes; a list for another day is dropped.
+    var iso = d.getFullYear() + '-' + mm + '-' + dd;
+    var daysOk = false;
+    var days = F.get('today').then(function (r) {
+      if (r.date === iso) { daysOk = true; return r.days || []; }
+      if (r.date === undefined) return r.days || [];
+      return [];
+    }).catch(function () { return null; });
     return Promise.all([days, wiki('selected')]).then(function (r) {
       var events = safe(r[1].selected, true);
       var more = events.length >= 4 ? Promise.resolve([]) : wiki('events').then(function (j) { return safe(j.events); });
@@ -967,8 +975,8 @@
         events = events.concat(m).filter(function (e) { var k = e.year + e.text.slice(0, 30); if (seen[k]) return false; seen[k] = 1; return true; });
         // "National ___ Day" first, then the rest
         var dl = (r[0] || []).slice().sort(function (a, b) { return (/^National /.test(b) ? 1 : 0) - (/^National /.test(a) ? 1 : 0); });
-        todayData = { date: key, days: dl, events: events, complete: r[0] !== null && events.length > 0 };
-        try { localStorage.setItem('famdash.today', JSON.stringify(todayData)); } catch (e) {}
+        todayData = { date: key, days: dl, events: events, complete: daysOk && events.length > 0 };
+        try { localStorage.setItem('famdash.today2', JSON.stringify(todayData)); localStorage.removeItem('famdash.today'); } catch (e) {}
         if (current === 'today') renderToday();
       });
     });
