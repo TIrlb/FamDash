@@ -483,9 +483,16 @@
       im.src = src;
     });
   }
-  var GRIDKEY = 'famdash.lunchGrid';
+  // A saved result is reused only if it came from this version of the detector, and a "no grid"
+  // result is retried after 6 hours, so detector fixes reach flyers that failed before.
+  var GRIDKEY = 'famdash.lunchGrid', GRIDV = 2;
   function savedGrid(url) {
-    try { var g = JSON.parse(localStorage.getItem(GRIDKEY) || 'null'); return g && g.url === url ? g.grid : undefined; } catch (e) { return undefined; }
+    try {
+      var g = JSON.parse(localStorage.getItem(GRIDKEY) || 'null');
+      if (!g || g.url !== url || g.v !== GRIDV) return undefined;
+      if (!g.grid && !(Date.now() - (g.at || 0) < 6 * 3600000)) return undefined;
+      return g.grid;
+    } catch (e) { return undefined; }
   }
   // One CORS read of the image gives both the whitespace trim box and the calendar grid.
   function measureBox(url, name) {
@@ -495,7 +502,7 @@
       try { grid = findGrid(im, name); } catch (e) { grid = null; }
       try {
         if (box) localStorage.setItem(BOXKEY, JSON.stringify({ url: url, box: box }));
-        localStorage.setItem(GRIDKEY, JSON.stringify({ url: url, grid: grid }));
+        localStorage.setItem(GRIDKEY, JSON.stringify({ url: url, grid: grid, v: GRIDV, at: Date.now() }));
       } catch (e) {}
       return { box: box, grid: grid };
     }).catch(function () { return { box: null, grid: null }; });
