@@ -371,7 +371,7 @@ function deletePhoto_(id) {
 function lunch_(fresh) {
   const cache = CacheService.getScriptCache();
   if (!fresh) {
-    const hit = cache.get('lunch');
+    const hit = cache.get('lunch2');
     if (hit) return JSON.parse(hit);
   }
   const st = getState_().settings;
@@ -410,7 +410,7 @@ function lunch_(fresh) {
   // Still on an old month's flyer: look again every 30 minutes instead of every 3 hours.
   const fm = flyerMonth_(out.name);
   out.stale = fm >= 0 && fm !== target.getMonth();
-  cache.put('lunch', JSON.stringify(out), out.stale ? 1800 : 3 * 3600);
+  cache.put('lunch2', JSON.stringify(out), out.stale ? 1800 : 3 * 3600);
   return out;
 }
 
