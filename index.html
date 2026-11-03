@@ -534,8 +534,26 @@
     var c = document.createElement('canvas'); c.width = w; c.height = h;
     var x = c.getContext('2d'); x.drawImage(im, 0, 0, w, h);
     var d = x.getImageData(0, 0, w, h).data;
-    var dark = new Uint8Array(w * h);
-    for (var i = 0, k = 0; i < w * h; i++, k += 4) dark[i] = (d[k] < 120 && d[k + 1] < 120 && d[k + 2] < 120) ? 1 : 0;
+    var ink = new Uint8Array(w * h);      // brightest channel: grey rules stay low, orange/brown art stays high
+    for (var i = 0, k = 0; i < w * h; i++, k += 4) ink[i] = Math.max(d[k], d[k + 1], d[k + 2]);
+    var fm = flyerMonth(name), weeks = monthWeeks(fm.y, fm.m);
+    // Some flyers rule the grid in black, others in light grey (a scaled-down screenshot): try darkest first.
+    var thresholds = [120, 170, 210];
+    for (var t = 0; t < thresholds.length; t++) {
+      var dark = new Uint8Array(w * h), thr = thresholds[t];
+      for (var j = 0; j < w * h; j++) dark[j] = ink[j] < thr ? 1 : 0;
+      var g = gridAt(dark, w, h, s, weeks);
+      if (g) {
+        g.y = fm.y; g.m = fm.m; g.W = W; g.H = H;
+        // the options text is black even when the rules are grey; faint marks would pad the crop
+        if (thr !== 120) for (var q = 0; q < w * h; q++) dark[q] = ink[q] < 120 ? 1 : 0;
+        g.extras = findExtras(dark, w, h, s, g.xs, g.ys);
+        return g;
+      }
+    }
+    return null;
+  }
+  function gridAt(dark, w, h, s, weeks) {
     function lines(len, span, at, minRun) {
       var hits = [];
       for (var a = 0; a < len; a++) {
@@ -545,20 +563,29 @@
       }
       var out = [];
       hits.forEach(function (v) { if (out.length && v - out[out.length - 1][1] <= 4) out[out.length - 1][1] = v; else out.push([v, v]); });
-      return out.map(function (g) { return Math.round((g[0] + g[1]) / 2 / s); });
+      return out.map(function (g) { return Math.round((g[0] + g[1]) / 2); });
     }
     var ys = lines(h, w, function (a, b) { return a * w + b; }, w * 0.4);
     var xs = lines(w, h, function (a, b) { return b * w + a; }, h * 0.3);
-    var fm = flyerMonth(name), weeks = monthWeeks(fm.y, fm.m);
     var wdCol0;
     if (xs.length === 6) wdCol0 = 0;          // Mon..Fri columns
     else if (xs.length === 8) wdCol0 = 1;     // Sun..Sat: Monday is the 2nd column
     else return null;
+    // Drop rules above/below the grid (a page edge, a footer line): a real band has the grid's
+    // left border running through its middle.
+    function inGrid(y0, y1) {
+      var ym = Math.round((y0 + y1) / 2);
+      for (var dx = -3; dx <= 3; dx++) { var xx = xs[0] + dx; if (xx >= 0 && xx < w && dark[ym * w + xx]) return true; }
+      return false;
+    }
+    while (ys.length > 2 && !inGrid(ys[ys.length - 2], ys[ys.length - 1])) ys.pop();
+    while (ys.length > 2 && !inGrid(ys[0], ys[1])) ys.shift();
     var bands = ys.length - 1, header;
     if (bands === weeks.length + 1) header = true;
     else if (bands === weeks.length) header = false;
     else return null;
-    return { xs: xs, ys: ys, header: header, wdCol0: wdCol0, y: fm.y, m: fm.m, W: W, H: H, extras: findExtras(dark, w, h, s, xs, ys) };
+    function full(v) { return Math.round(v / s); }
+    return { xs: xs.map(full), ys: ys.map(full), header: header, wdCol0: wdCol0 };
   }
   // "Additional daily options" text under the grid's left half, as a trimmed rect (or null).
   // Keeps the heading plus its indented list and drops the fine print that follows.

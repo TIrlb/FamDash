@@ -377,20 +377,23 @@ function lunch_(fresh) {
   const st = getState_().settings;
   if (!st.lunchUrl && !st.lunchImageUrl && !st.lunchFilesBase) return { url: null };   // not set up: view is skipped
   const notes = [];
+  const target = lunchTarget_();
+  let lastName = '';
+  try { lastName = (JSON.parse(PROPS.getProperty('LUNCH_LAST') || 'null') || {}).name || ''; } catch (e) {}
   // 1. The page itself. The school site sits behind a Cloudflare bot challenge, so this
   //    usually 403s from Google's servers; kept in case that's ever relaxed.
   let out = null;
   if (st.lunchUrl) try {
     const res = UrlFetchApp.fetch(st.lunchUrl, { muteHttpExceptions: true, followRedirects: true });
     if (res.getResponseCode() === 200) {
-      const pick = pickLunchImage_(res.getContentText());
+      const pick = pickLunchImage_(res.getContentText(), target);
       if (pick) out = { url: pick.url, name: pick.name, source: 'page' };
       else notes.push('no image on page');
     } else notes.push('page ' + res.getResponseCode());
   } catch (e) { notes.push('page error'); }
-  // 2. Guess this month's file from the naming the school has used ("October lunch.png").
+  // 2. Guess the target month's file from the naming the school has used ("October lunch.png").
   if (!out) {
-    const g = guessLunchImage_(st.lunchFilesBase || lastLunchBase_());
+    const g = guessLunchImage_(st.lunchFilesBase || lastLunchBase_(), target, lastName);
     if (g) out = { url: g, name: decodeURIComponent(g.split('/').pop()), source: 'guess' };
     else notes.push('no guess matched');
   }
@@ -403,8 +406,11 @@ function lunch_(fresh) {
   if (!out) throw new Error('no lunch image (' + notes.join(', ') + ') — paste the image URL in controller settings');
   out.checked = new Date().toISOString();
   out.notes = notes;
-  if (out.source !== 'manual') PROPS.setProperty('LUNCH_LAST', JSON.stringify({ url: out.url, name: out.name, source: 'last good' }));
-  cache.put('lunch', JSON.stringify(out), 3 * 3600);
+  if (out.source !== 'manual' && out.source !== 'last good') PROPS.setProperty('LUNCH_LAST', JSON.stringify({ url: out.url, name: out.name, source: 'last good' }));
+  // Still on an old month's flyer: look again every 30 minutes instead of every 3 hours.
+  const fm = flyerMonth_(out.name);
+  out.stale = fm >= 0 && fm !== target.getMonth();
+  cache.put('lunch', JSON.stringify(out), out.stale ? 1800 : 3 * 3600);
   return out;
 }
 
@@ -413,24 +419,54 @@ function lunch_(fresh) {
 function lastLunchBase_() {
   try {
     const last = JSON.parse(PROPS.getProperty('LUNCH_LAST') || 'null');
-    const m = last && /^(https:\/\/.+\/)\d{4}\/\d{1,2}\/[^\/]+$/.exec(last.url);
+    const m = last && /^(https:\/\/.+\/)\d{4}\/\d{1,2}\/[^\/?]+(\?.*)?$/.exec(last.url);
     return m ? m[1] : '';
   } catch (e) { return ''; }
 }
 
-function guessLunchImage_(base) {
+const LUNCH_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// The school day the dashboard is showing: today, or Monday on weekends. Late in a month the
+// school posts next month's flyer alongside the current one, so "which month" follows this date.
+function lunchTarget_() {
+  const d = new Date();
+  const wd = d.getDay();
+  if (wd === 6) d.setDate(d.getDate() + 2); else if (wd === 0) d.setDate(d.getDate() + 1);
+  return d;
+}
+// Month a flyer is for, from its file name ("november menu.png" -> 10); -1 when it doesn't say.
+function flyerMonth_(name) {
+  const low = String(name || '').toLowerCase();
+  for (let i = 0; i < 12; i++) {
+    const full = LUNCH_MONTHS[i].toLowerCase();
+    if (low.indexOf(full) >= 0 || new RegExp('(^|[^a-z])' + full.slice(0, 3) + '([^a-z]|$)').test(low)) return i;
+  }
+  return -1;
+}
+
+function guessLunchImage_(base, target, lastName) {
   if (!base) return null;
-  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const now = new Date();
-  const name = MONTHS[now.getMonth()];
-  const folders = [-1, 0].map(function (off) {
-    const d = new Date(now.getFullYear(), now.getMonth() + off, 1);
+  const name = LUNCH_MONTHS[target.getMonth()];
+  // Flyers go up the month before (October's lived in .../2026/9/), so check that folder too.
+  const folders = [0, -1, -2].map(function (off) {
+    const d = new Date(target.getFullYear(), target.getMonth() + off, 1);
     return d.getFullYear() + '/' + (d.getMonth() + 1) + '/';
   });
-  const stems = [name + ' lunch', name + ' Lunch', name + ' Lunch Menu', name + ' lunch menu', name + ' Menu', name + ' menu'];
+  const stems = [];
+  function add(x) { if (stems.indexOf(x) < 0) stems.push(x); }
+  // First, last month's file name with the month swapped ("October lunch" -> "November lunch").
+  const lm = flyerMonth_(lastName);
+  if (lm >= 0) {
+    const stem = String(lastName).replace(/\.[a-z]+$/i, '');
+    const re = new RegExp(LUNCH_MONTHS[lm], 'i');
+    add(stem.replace(re, function (m) { return m === m.toLowerCase() ? name.toLowerCase() : m === m.toUpperCase() ? name.toUpperCase() : name; }));
+  }
+  [name, name.toLowerCase()].forEach(function (n) {
+    [' lunch', ' Lunch', ' menu', ' Menu', ' lunch menu', ' Lunch Menu', ' Lunch menu'].forEach(function (t) { add(n + t); });
+  });
   const exts = ['.png', '.jpg', '.jpeg'];
   const urls = [];
-  folders.reverse().forEach(function (f) {          // newest folder first
+  folders.forEach(function (f) {
     stems.forEach(function (s) { exts.forEach(function (x) { urls.push(base + f + encodeURIComponent(s) + x); }); });
   });
   const res = UrlFetchApp.fetchAll(urls.map(function (u) { return { url: u, muteHttpExceptions: true }; }));
@@ -441,7 +477,7 @@ function guessLunchImage_(base) {
   return null;
 }
 
-function pickLunchImage_(html) {
+function pickLunchImage_(html, target) {
   const re = /https?:\/\/files\.ecatholic\.com\/\d+\/pictures\/(\d{4})\/(\d{1,2})\/([^"'\s<>?]+?\.(?:png|jpe?g|gif|webp))(?:\?t=(\d+))?/gi;
   const seen = {};
   const list = [];
@@ -465,7 +501,10 @@ function pickLunchImage_(html) {
   const pool = list.filter(function (x) { return x.lunchy; });
   const candidates = pool.length ? pool : list.filter(function (x) { return !x.logo; });
   candidates.sort(function (a, b) { return b.when - a.when; });
-  return candidates[0] || null;
+  // When both months' flyers are up, take the one named for the target month.
+  const tm = target ? target.getMonth() : -1;
+  const named = candidates.filter(function (x) { return flyerMonth_(x.name) === tm; });
+  return named[0] || candidates[0] || null;
 }
 
 /* ---------- gratitude notes (one script property per note: no size ceiling on the list) ---------- */
