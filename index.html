@@ -1475,7 +1475,7 @@
       jump('gratitude', hold);
       ack(msg);
     });
-    else if (msg.type === 'reload') location.reload();
+    else if (msg.type === 'reload') { ack(msg); setTimeout(function () { location.reload(); }, 1500); }   // let the ack get out first
   }
 
   /* ---------- keep awake (newer browsers only; use a kiosk app on old tablets) ---------- */

@@ -680,12 +680,21 @@
   }
   function copy(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function () { status('link copied'); }, function () { window.prompt('Copy this link:', text); });
+      navigator.clipboard.writeText(text).then(function () { if (!busy) { clearTimeout(hideTimer); bar('done', 'Link copied ✓'); hideTimer = setTimeout(refreshBar, 2500); } }, function () { window.prompt('Copy this link:', text); });
     } else window.prompt('Copy this link:', text);
   }
   $('copyDisplay').onclick = function () { copy(link('')); };
   $('copyControl').onclick = function () { copy(link('control.html')); };
-  $('reloadDisplay').onclick = function () { F.poke(state.ntfyTopic, { type: 'reload' }); status('reload sent'); };
+  // Reload: the display answers before it reloads, so the bar can confirm it really heard.
+  $('reloadDisplay').onclick = function () {
+    if (busy) return;
+    busy = true; clearTimeout(hideTimer);
+    bar('saving', 'Reloading the display…');
+    var id = Math.random().toString(36).slice(2);
+    var timer = setTimeout(function () { delete acks[id]; finish('Reload sent · display didn\'t answer — is it on?', true); }, 10000);
+    acks[id] = function () { clearTimeout(timer); delete acks[id]; finish('Display reloading ✓'); };
+    F.poke(state.ntfyTopic, { type: 'reload', id: id });
+  };
 
   /* ---------- boot ---------- */
   function load() {
