@@ -43,6 +43,7 @@
     var tvs = (c.broadcasts || []).map(function (b) { return (b.media && b.media.shortName) || (b.names && b.names[0]) || ''; }).filter(String);
     function rank(x) { var r = x && x.curatedRank && x.curatedRank.current; return r && r <= 25 ? r : null; }
     return {
+      id: e.id,
       date: e.date,
       tbd: c.timeValid === false || e.timeValid === false,   // kickoff not announced yet
       state: c.status.type.state,
@@ -226,12 +227,33 @@
         else if (t.last && (dayDiff(t.last.date) === 0 || (dayDiff(t.last.date) === -1 && now.getHours() < 12))) { g = t.last; why = 'final'; }
         else if (t.next && dayDiff(t.next.date) >= 0 && dayDiff(t.next.date) <= 1) { g = t.next; why = dayDiff(t.next.date) === 0 ? 'today' : 'tomorrow'; }
         return g ? Object.assign({}, t, { game: g, why: why, leagueShort: SHORT[t.league] }) : null;
-      }).filter(Boolean).sort(function (a, b) {
+      }).filter(Boolean);
+    }).then(fillScores).then(function (list) {
+      return list.sort(function (a, b) {
         // most urgent first: live, later today, finished today, tomorrow; then by start time
         var pri = { live: 0, today: 1, final: 2, tomorrow: 3 };
         return (pri[a.why] - pri[b.why]) || (a.game.date < b.game.date ? -1 : a.game.date > b.game.date ? 1 : 0);
       });
     });
+  }
+
+  // A team's schedule shows a game in progress with null scores; the league scoreboard has them.
+  // One scoreboard fetch per league and day, only for live games (or finals missing a score).
+  function fillScores(list) {
+    var need = list.filter(function (t) { return t.game && (t.why === 'live' || t.game.us == null || t.game.them == null) && t.why !== 'today' && t.why !== 'tomorrow'; });
+    var boards = {};
+    need.forEach(function (t) {
+      var key = t.league + ':' + ymd(new Date(t.game.date));
+      // college scoreboards default to ranked/featured games; ask for all of FBS / Division I
+      var groups = t.league === 'football/college-football' ? '&groups=80' : t.league.indexOf('college-basketball') >= 0 ? '&groups=50' : '';
+      if (!boards[key]) boards[key] = getJsonOrNull(SITE + t.league + '/scoreboard?limit=300' + groups + '&dates=' + ymd(new Date(t.game.date)));
+    });
+    return Promise.all(need.map(function (t) {
+      return boards[t.league + ':' + ymd(new Date(t.game.date))].then(function (j) {
+        var e = ((j && j.events) || []).filter(function (x) { return String(x.id) === String(t.game.id); })[0];
+        if (e) t.game = gameInfo(e, t.id);
+      });
+    })).then(function () { return list; }, function () { return list; });
   }
 
   /* ---------- ESPN fantasy football (public league) ---------- */

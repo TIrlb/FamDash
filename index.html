@@ -966,7 +966,7 @@
     // the same school can be a favorite in several sports, so say which one
     if (t.leagueShort) badge = badge.replace('</span>', ' · ' + esc(t.leagueShort) + '</span>');
     if (t.why === 'final') mu = '<span class="res ' + g.result + '">' + esc(g.result) + ' ' + esc(g.us) + '–' + esc(g.them) + '</span> ' + oppHtml(g);
-    else if (t.why === 'live') mu = '<span class="res">' + esc(g.us) + '–' + esc(g.them) + '</span> ' + oppHtml(g);
+    else if (t.why === 'live') mu = (g.us != null && g.them != null ? '<span class="res">' + esc(g.us) + '–' + esc(g.them) + '</span> ' : '') + oppHtml(g);
     else mu = oppHtml(g);
     if (t.why === 'today' || t.why === 'tomorrow') sub = (g.tbd ? 'Time TBD' : clock(g.date)) + (g.tv ? ' · ' + esc(g.tv) : '');
     else sub = t.record ? esc(t.record) + (t.standing ? ' · ' + esc(t.standing) : '') : '';
@@ -1008,7 +1008,10 @@
     $('spTitle').innerHTML = 'Scores <span>· ' + new Date().toLocaleDateString([], { weekday: 'long' }) + '</span>';
     $('spFeat').style.gridTemplateColumns = 'repeat(' + fcols + ', 1fr)';
     $('spFeat').innerHTML = feat.map(featCard).join('');
-    var games = d.games.slice(0, !nf ? 9 : nf <= 3 ? 6 : nf <= 6 ? 3 : 0);
+    // a favorite's game already has its own card, so leave it out of the top games
+    var shown = {};
+    feat.forEach(function (t) { if (t.game && t.game.id) shown[t.game.id] = 1; });
+    var games = d.games.filter(function (x) { return !shown[x.id]; }).slice(0, !nf ? 9 : nf <= 3 ? 6 : nf <= 6 ? 3 : 0);
     // Fewer games -> fewer columns and bigger tiles. Featured cards take a row, so step down a size.
     var n = games.length, cols, k;
     if (n <= 1) { cols = 1; k = 2.6; } else if (n === 2) { cols = 2; k = 2.2; } else if (n === 3) { cols = 3; k = 1.85; }
