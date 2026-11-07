@@ -310,8 +310,8 @@
         else if (action === 'scores') {
           var nd = SPORTS['football/college-football:87'], bulls = SPORTS['basketball/nba:4'];
           r = { ok: true,
-            featured: [Object.assign({}, nd, { league: 'football/college-football', id: '87', game: Object.assign({}, nd.next, { date: dayAt(1, 19, 30) }), why: 'tomorrow' }),
-                       Object.assign({}, bulls, { league: 'basketball/nba', id: '4', game: bulls.live, why: 'live' })],
+            featured: [Object.assign({}, bulls, { league: 'basketball/nba', leagueShort: 'NBA', id: '4', game: bulls.live, why: 'live' }),
+                       Object.assign({}, nd, { league: 'football/college-football', leagueShort: 'CFB', id: '87', game: Object.assign({}, nd.next, { date: dayAt(1, 19, 30) }), why: 'tomorrow' })],
             games: DEMO_GAMES() };
         }
         else if (action === 'fantasy') r = state.settings.fantasyLeagueId ? Object.assign({ ok: true }, DEMO_FANTASY()) : { ok: true, league: null };

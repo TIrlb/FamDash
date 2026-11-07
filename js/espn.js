@@ -225,8 +225,12 @@
         if (t.live) { g = t.live; why = 'live'; }
         else if (t.last && (dayDiff(t.last.date) === 0 || (dayDiff(t.last.date) === -1 && now.getHours() < 12))) { g = t.last; why = 'final'; }
         else if (t.next && dayDiff(t.next.date) >= 0 && dayDiff(t.next.date) <= 1) { g = t.next; why = dayDiff(t.next.date) === 0 ? 'today' : 'tomorrow'; }
-        return g ? Object.assign({}, t, { game: g, why: why }) : null;
-      }).filter(Boolean);
+        return g ? Object.assign({}, t, { game: g, why: why, leagueShort: SHORT[t.league] }) : null;
+      }).filter(Boolean).sort(function (a, b) {
+        // most urgent first: live, later today, finished today, tomorrow; then by start time
+        var pri = { live: 0, today: 1, final: 2, tomorrow: 3 };
+        return (pri[a.why] - pri[b.why]) || (a.game.date < b.game.date ? -1 : a.game.date > b.game.date ? 1 : 0);
+      });
     });
   }
 
