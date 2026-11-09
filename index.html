@@ -1092,13 +1092,10 @@
   var GRIM = /\b(kill|killed|killing|dead|death|deaths|die[sd]?|dying|murder|massacr|shoot|shooting|shot|bomb|terror|attack|assassinat|war\b|wars\b|warfare|invasion|invade|execut|genocide|hostage|riot|crash|disaster|earthquake|explo[ds]|sank|sink|sunk|hang(ed)?\b|lynch|rape|abuse|slave|holocaust|nazi|casualt|wound|battle|siege|coup|suicide|famine|plague|epidemic|pandemic|fire\b|burn|injur|victim|tragedy|prison|arrest|guerrilla|militant|insurg|insurrection|detain|revolt|uprising|anarchis|rebel|soldier|troops|army|missile|nuclear|weapon|gun|military|operation\b|occupation|conflict|afghanistan|iraq|cartel|gang|crime|criminal|scandal|impeach)/i;
   function todayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
 
-  // Sports: Wikipedia's dated events only hold a sports moment or two a month, so fall back to the
-  // best-known athlete born today (most-viewed article over 30 days), preferring American sports.
+  // Sports moments come from data/sports-history.json; these spot sports items in Wikipedia's list.
   var SPORT_EVENT = /\b(baseball|basketball|ice hockey|hockey|football|soccer|Olympic|Olympics|World Series|Super Bowl|Stanley Cup|NFL|NBA|WNBA|MLB|NHL|NCAA|Final Four|Rose Bowl|Heisman|Hall of Fame|tennis|Wimbledon|U\.S\. Open|golf|Masters Tournament|boxing|heavyweight|Indianapolis 500|Daytona 500|Kentucky Derby|Triple Crown|World Cup|marathon|home runs?|touchdowns?|no-hitter|perfect game|grand slam|world record)\b/i;
   var US_SPORT = /\b(college football|American football|intercollegiate|baseball|basketball|hockey|Olympic|Olympics|World Series|Super Bowl|Stanley Cup|NFL|NBA|WNBA|MLB|NHL|NCAA|Final Four|Rose Bowl|Heisman|Indianapolis 500|Daytona 500|Kentucky Derby|home runs?|touchdowns?|no-hitter|perfect game)\b/i;
   var US_EVENT = /\b(United States|U\.S\.|American|America|NASA|President|Congress|Washington|New York|California|Texas|Chicago|Indiana|Apollo|Statue of Liberty|Disney|Wright brothers)\b/;
-  var ATHLETE = /\b(baseball|football|basketball|ice hockey|hockey|soccer|tennis|golfer|boxer|racing driver|athlete|sprinter|swimmer|figure skater|skier|snowboarder|gymnast|quarterback|pitcher|decathlete|Olympic|NASCAR|jockey|cyclist)\b/i;
-  var NOT_ATHLETE = /footballer|cricket|rugby|Australian rules|Gaelic|professional wrestl|politician|actor|actress|singer|rapper/i;
 
   // "National ___ Day": there is no official list (most are invented by brands, PR firms or National
   // Day Calendar), so pick the one a kid will care about: food, animals and play beat health and causes.
@@ -1124,7 +1121,7 @@
     if (todayData && todayData.date === key && todayData.complete) return Promise.resolve();
     var d = new Date(), mm = ('0' + (d.getMonth() + 1)).slice(-2), dd = ('0' + d.getDate()).slice(-2);
     var cached = null;
-    try { cached = JSON.parse(localStorage.getItem('famdash.today4') || 'null'); } catch (e) {}
+    try { cached = JSON.parse(localStorage.getItem('famdash.today5') || 'null'); } catch (e) {}
     if (cached && cached.date === key && cached.complete) { todayData = cached; return Promise.resolve(); }
     var base = 'https://en.wikipedia.org/api/rest_v1/feed/onthisday/';
     function wiki(kind) { return fetch(base + kind + '/' + mm + '/' + dd).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }); }
@@ -1157,42 +1154,38 @@
       if (r.date === undefined) return r.days || [];
       return [];
     }).catch(function () { return null; });
-    return Promise.all([days, wiki('selected'), wiki('events'), wiki('births')]).then(function (r) {
+    // Sports moments come from our own list (data/sports-history.json): hand-picked, every date
+    // checked against its Wikipedia article. Pictures come from that article's summary.
+    var md = mm + '-' + dd;
+    var moments = fetch('data/sports-history.json').then(function (r) { return r.json(); }).then(function (all) {
+      return Promise.all((all[md] || []).map(function (m) {
+        return fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(m.a.replace(/ /g, '_')))
+          .then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }).then(function (pg) {
+            var src = pg.thumbnail && pg.thumbnail.source || '';
+            return { year: m.y, text: m.t, img: src ? src.replace(/\/(\d+)px-/, '/500px-') : '', small: src, title: m.a };
+          });
+      }));
+    }).catch(function () { return []; });
+    return Promise.all([days, wiki('selected'), wiki('events'), moments]).then(function (r) {
       var seen = {};
       var all = safe(r[1].selected, true).concat(safe(r[2].events)).filter(function (e) {
         var k = e.year + e.text.slice(0, 30); if (seen[k]) return false; seen[k] = 1; return true;
       });
-      var sports = all.filter(function (e) { return SPORT_EVENT.test(e.text); });
       var history = all.filter(function (e) { return !SPORT_EVENT.test(e.text); });
-      var usSports = sports.filter(function (e) { return US_SPORT.test(e.text); });
-      // athletes born today, ranked by pageviews (one request for up to 50 titles)
-      var athletes = ((r[3] && r[3].births) || []).filter(function (e) {
-        var p = (e.pages || [])[0], ds = p && p.description || '';
-        return e.year && p && ATHLETE.test(ds) && !NOT_ATHLETE.test(ds) && !GRIM.test(e.text) && !MATURE.test(ds);
-      }).slice(0, 50);
+      // Days our list doesn't cover yet: a US sports event from Wikipedia's own list, if there is one.
+      var usSports = all.filter(function (e) { return SPORT_EVENT.test(e.text) && US_SPORT.test(e.text); });
+      var sport = r[3].length ? r[3] : usSports.slice(0, 2);
       var histTop = history.filter(function (e) { return e.title; }).slice(0, 50);
-      return Promise.all([pageviews(athletes.map(function (e) { return e.pages[0].title; })),
-        pageviews(histTop.map(function (e) { return e.title; }))]).then(function (v) {
-        var av = v[0], hv = v[1];
-        function aScore(e) { var p = e.pages[0]; return ((av[p.title.replace(/_/g, ' ')] || 0) + (p.thumbnail ? 1 : 0)) * (/^American /.test(p.description || '') ? 3 : 1); }
-        var born = athletes.slice().sort(function (x, y) { return aScore(y) - aScore(x); }).slice(0, 1).map(function (e) {
-          var c = card(e), p = e.pages[0];
-          c.text = 'Born today: ' + (p.normalizedtitle || p.title.replace(/_/g, ' ')).replace(/ \(.*\)$/, '') + ', ' +
-            (p.description || '').replace(/ \((born )?\d{4}.*\)$/, '');
-          c.born = true;
-          return c;
-        });
+      return pageviews(histTop.map(function (e) { return e.title; })).then(function (hv) {
         // history: the best-known subjects first (pageviews of the event's main article), nudged toward
         // US events, pictures and Wikipedia's own picks; the page rotates through the top few.
         function hScore(e) {
           return ((hv[e.title] || 0) + 1) * (US_EVENT.test(e.text) ? 2.5 : 1) * (e.img ? 2 : 1) * (e.sel ? 1.5 : 1);
         }
         history.sort(function (x, y) { return hScore(y) - hScore(x); });
-        // a US-flavored sports moment beats a birthday; a birthday beats rugby or cricket
-        var sport = usSports.length ? usSports : born.length ? born : sports;
         todayData = { date: key, days: r[0] || [], day: pickDay(r[0]), sports: sport, events: history.slice(0, 6),
           complete: daysOk && history.length > 0 };
-        try { localStorage.setItem('famdash.today4', JSON.stringify(todayData)); localStorage.removeItem('famdash.today3'); } catch (e) {}
+        try { localStorage.setItem('famdash.today5', JSON.stringify(todayData)); localStorage.removeItem('famdash.today4'); } catch (e) {}
         if (current === 'today') renderToday();
       });
     });

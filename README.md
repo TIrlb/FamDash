@@ -13,7 +13,7 @@ Family wall dashboard for an old tablet, driven from a phone controller. It cycl
 | Fantasy | ESPN fantasy API (public league): matchups with each roster's top 3 performers, standings; holds last week's finals on Tue/Wed |
 | Quote wall | Drive folder "FamDash Quotes" |
 | Gratitude | Text notes added from the controller |
-| Today | One sports moment (a US sports event on this date, else the best-known athlete born today) + one history event (ranked by Wikipedia pageviews, nudged toward US events), and one "Today is National ___ Day" picked from Checkiday's list (food/animals/play over health/causes) |
+| Today | One sports moment from `data/sports-history.json` (hand-picked US sports moments; every date checked against Wikipedia with `tools/verify-sports-history.py`; days not covered yet use a US sports event from Wikipedia's list, or skip the card) + one history event (ranked by Wikipedia pageviews, nudged toward US events), and one "Today is National ___ Day" picked from Checkiday's list |
 
 | Page | Purpose |
 |---|---|
