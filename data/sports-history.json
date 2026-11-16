@@ -878,11 +878,37 @@
 "a": "Mike Tyson vs. Evander Holyfield"
 }
 ],
+"11-16": [
+{
+"y": 2013,
+"t": "Auburn beats Georgia on a tipped long pass called the 'Prayer at Jordan–Hare'",
+"a": "Prayer at Jordan–Hare"
+}
+],
 "11-17": [
 {
 "y": 1968,
 "t": "NBC cuts away to the movie 'Heidi' as the Raiders score twice to beat the Jets",
 "a": "Heidi Game"
+}
+],
+"11-18": [
+{
+"y": 2006,
+"t": "No. 1 Ohio State beats No. 2 Michigan in a matchup billed as the 'Game of the Century'",
+"a": "2006 Michigan vs. Ohio State football game"
+}
+],
+"11-19": [
+{
+"y": 1966,
+"t": "No. 1 Notre Dame and No. 2 Michigan State play to a famous tie in a 'Game of the Century'",
+"a": "1966 Notre Dame vs. Michigan State football game"
+},
+{
+"y": 2018,
+"t": "The Rams beat the Chiefs in one of the highest-scoring games in NFL history",
+"a": "2018 Kansas City Chiefs–Los Angeles Rams game"
 }
 ],
 "11-20": [
@@ -892,11 +918,83 @@
 "a": "The Play (American football)"
 }
 ],
+"11-21": [
+{
+"y": 1970,
+"t": "Unbeaten Ohio State beats unbeaten Michigan in their big rivalry game",
+"a": "1970 Ohio State Buckeyes football team"
+}
+],
+"11-22": [
+{
+"y": 1986,
+"t": "Mike Tyson, age 20, becomes the youngest heavyweight boxing champion ever",
+"a": "Trevor Berbick vs. Mike Tyson"
+},
+{
+"y": 2003,
+"t": "The NHL plays its first outdoor regular-season game, the Heritage Classic in Edmonton",
+"a": "2003 Heritage Classic"
+},
+{
+"y": 1969,
+"t": "Michigan stuns unbeaten, top-ranked Ohio State in Bo Schembechler's first season",
+"a": "1969 Michigan vs. Ohio State football game"
+}
+],
 "11-23": [
 {
 "y": 1984,
 "t": "Doug Flutie's Hail Mary beats Miami",
 "a": "Hail Flutie"
+},
+{
+"y": 2014,
+"t": "Odell Beckham Jr. makes a famous one-handed touchdown catch for the Giants",
+"a": "Odell Beckham Jr."
+}
+],
+"11-24": [
+{
+"y": 1960,
+"t": "Wilt Chamberlain grabs an NBA-record 55 rebounds in one game",
+"a": "Wilt Chamberlain"
+},
+{
+"y": 1973,
+"t": "Unbeaten Michigan and Ohio State play to a tie in their big rivalry game",
+"a": "1973 Michigan vs. Ohio State football game"
+}
+],
+"11-25": [
+{
+"y": 1971,
+"t": "No. 1 Nebraska beats No. 2 Oklahoma on Thanksgiving in college football's 'Game of the Century'",
+"a": "1971 Nebraska vs. Oklahoma football game"
+},
+{
+"y": 1980,
+"t": "Sugar Ray Leonard wins back his welterweight title from Roberto Durán in the 'No Más' fight",
+"a": "No Más Fight"
+}
+],
+"11-26": [
+{
+"y": 2010,
+"t": "Cam Newton leads Auburn back from 24 points down to beat Alabama in the Iron Bowl",
+"a": "Iron Bowl"
+}
+],
+"11-27": [
+{
+"y": 2021,
+"t": "Michigan beats Ohio State for the first time in ten years",
+"a": "2021 Michigan Wolverines football team"
+},
+{
+"y": 1982,
+"t": "Bo Jackson leaps over the top to help Auburn end Alabama's long Iron Bowl winning streak",
+"a": "Iron Bowl"
 }
 ],
 "11-28": [
@@ -904,6 +1002,23 @@
 "y": 1929,
 "t": "Ernie Nevers scores all 40 of his team's points in an NFL game",
 "a": "Ernie Nevers"
+},
+{
+"y": 1974,
+"t": "Rookie backup Clint Longley comes off the bench to lead the Cowboys past Washington on Thanksgiving",
+"a": "Cowboys–Commanders rivalry"
+}
+],
+"11-29": [
+{
+"y": 1890,
+"t": "Army and Navy play their very first football game",
+"a": "Army–Navy Game"
+},
+{
+"y": 1934,
+"t": "The Detroit Lions host the Chicago Bears on Thanksgiving, starting a holiday tradition",
+"a": "1934 Detroit Lions season"
 }
 ],
 "11-30": [
