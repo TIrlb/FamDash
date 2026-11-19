@@ -1016,13 +1016,15 @@
     var n = games.length, cols, k;
     if (n <= 1) { cols = 1; k = 2.6; } else if (n === 2) { cols = 2; k = 2.2; } else if (n === 3) { cols = 3; k = 1.85; }
     else if (n === 4) { cols = 2; k = 1.7; } else if (n <= 6) { cols = 3; k = 1.4; } else { cols = 3; k = 1.15; }
-    if (feat.length && n > 1) k = Math.max(1, k * 0.8);
+    // With favorites on screen, top games sit on the same 3-column grid at the favorite cards' scale,
+    // so one or two leftover games stay card-sized instead of filling the page.
+    if (feat.length) { cols = 3; k = n <= 3 ? 1.4 : 1.15; }
     var g = $('spGames');
     g.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
     g.style.setProperty('--k', k);
-    g.className = 'sp-games fill' + (k >= 1.7 ? ' big' : '');
+    g.className = 'sp-games' + (feat.length && n <= 3 ? '' : ' fill') + (k >= 1.7 ? ' big' : '');
     // a single row shouldn't stretch to the full height
-    g.style.gridAutoRows = (n <= 3 && n > 0) ? (feat.length ? '1fr' : 'minmax(0, 60%)') : '';
+    g.style.gridAutoRows = (n <= 3 && n > 0 && !feat.length) ? 'minmax(0, 60%)' : '';
     g.style.alignContent = (n <= 3 && !feat.length) ? 'center' : '';
     $('spH2').textContent = feat.length && games.length ? 'Top games' : '';
     $('spH2').style.display = feat.length && games.length ? '' : 'none';
